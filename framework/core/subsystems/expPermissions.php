@@ -329,7 +329,8 @@ class expPermissions {
 			if (!self::checkUser($user,$permission,$location)) {
 				$obj = new stdClass();
 				$obj->uid = $user->id;
-				$obj->module = $location->mod;
+//				$obj->module = $location->mod;
+                $obj->module = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;
 				$obj->source = $location->src;
 				$obj->internal = $location->int;
 				$obj->permission = $permission;
@@ -463,7 +464,8 @@ class expPermissions {
 			if (!self::checkGroup($group,$permission,$location)) {
 				$obj = new stdClass();
 				$obj->gid = $group->id;
-				$obj->module = $location->mod;
+//				$obj->module = $location->mod;
+                $obj->module = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;
 				$obj->source = $location->src;
 				$obj->internal = $location->int;
 				$obj->permission = $permission;
@@ -488,7 +490,9 @@ class expPermissions {
 	 */
 	public static function revokeAll($user,$location) {
 		global $db;
-		return $db->delete("userpermission","uid=" . $user->id . " AND module='" . $location->mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
+
+        $mod = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;
+		return $db->delete("userpermission","uid=" . $user->id . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
 	}
 
 	/** exdoc
@@ -503,7 +507,9 @@ class expPermissions {
 	 */
 	public static function revokeAllGroup($group,$location) {
 		global $db;
-		return $db->delete('grouppermission','gid=' . $group->id . " AND module='" . $location->mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
+
+        $mod = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;
+		return $db->delete('grouppermission','gid=' . $group->id . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
 	}
 
     /** exdoc
@@ -517,8 +523,10 @@ class expPermissions {
      */
    	public static function revokeComplete($location) {
    		global $db;
-   		$db->delete("userpermission","module='".$location->mod."' AND source='".$location->src."'");
-   		$db->delete("grouppermission","module='".$location->mod."' AND source='".$location->src."'");
+
+        $mod = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;
+   		$db->delete("userpermission","module='".$mod."' AND source='".$location->src."'");
+   		$db->delete("grouppermission","module='".$mod."' AND source='".$location->src."'");
    		return true;
    	}
 
