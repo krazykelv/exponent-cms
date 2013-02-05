@@ -1,7 +1,7 @@
 <?php
 ##################################################
 #
-# Copyright (c) 2004-2012 OIC Group, Inc.
+# Copyright (c) 2004-2013 OIC Group, Inc.
 #
 # This file is part of Exponent
 #
@@ -120,7 +120,7 @@ class expDatabase {
         $renamed = array();
         foreach ($tablenames as $oldtablename=>$newtablename) {
             if (!$db->tableExists($newtablename)) {
-                $db->sql('RENAME TABLE '.DB_TABLE_PREFIX.$oldtablename.' TO '.DB_TABLE_PREFIX.$newtablename);
+                $db->sql('RENAME TABLE '.DB_TABLE_PREFIX.'_'.$oldtablename.' TO '.DB_TABLE_PREFIX.'_'.$newtablename);
                 $renamed[] = $newtablename;
             }
         }
@@ -130,7 +130,7 @@ class expDatabase {
     public static function install_dbtables($aggressive=false) {
    	    global $db;
 
-   		expSession::clearCurrentUserSessionCache();
+   		expSession::clearAllUsersSessionCache();
    		$tables = array();
 
    		// first the core and 1.0 definitions

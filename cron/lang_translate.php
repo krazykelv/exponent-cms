@@ -2,7 +2,7 @@
 <?php
 ##################################################
 #
-# Copyright (c) 2004-2012 OIC Group, Inc.
+# Copyright (c) 2004-2013 OIC Group, Inc.
 #
 # This file is part of Exponent
 #
@@ -17,11 +17,27 @@
 ##################################################
 
 /**
- * lang_translate.php - attempts to auto-translate ExponentCMS language files
+ * lang_translate.php - attempts to auto-translate current ExponentCMS language (file)
+ * Requires the 'BING_API' constant be set to the API code for you Bing account
  */
 
 // Initialize the exponent environment
 include_once('../exponent_bootstrap.php');
+if (!defined('DISPLAY_THEME')) {
+	/* exdoc
+	 * The directory and class name of the current active theme.  This may be different
+	 * than the configured theme (DISPLAY_THEME_REAL) due to previewing.
+	 */
+	define('DISPLAY_THEME',DISPLAY_THEME_REAL);
+}
+
+if (!defined('THEME_ABSOLUTE')) {
+	/* exdoc
+	 * The absolute path to the current active theme's files.  This is similar to the BASE constant
+	 */
+	define('THEME_ABSOLUTE',BASE.'themes/'.DISPLAY_THEME.'/'); // This is the recommended way
+}
+
 // Initialize the language subsystem
 expLang::loadLang();
 global $default_lang, $cur_lang;
@@ -30,6 +46,7 @@ if (empty($default_lang)) $default_lang = include(BASE."framework/core/lang/Engl
 if (LANGUAGE=="English - US") {
     print "You can't update the current language 'English - US' which is also the default translation!\n";
     print "Create and/or Switch to another Translation using Manage Translations!\n";
+    print "Or use the 'lang_extract.php' script to add new phrases to it.\n";
     exit;
 } elseif (!is_readable(BASE . 'framework/core/lang/' . utf8_decode(LANGUAGE) . '.php')) {
     print "The '".utf8_decode(LANGUAGE)."' Translation doesn't seem to exist yet!\n";
