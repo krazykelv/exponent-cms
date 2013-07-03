@@ -732,6 +732,93 @@ class expFile extends expRecord {
         return preg_replace('/[^A-Za-z0-9\.]/', '-', $name);
     }
 
+    /**
+     * Return the mimetype for the passed filename
+     *
+     * @param string $filename
+     * @return string
+     */
+    public static function getMimeType($filename) {
+        /* Store an array of commom mimetypes */
+        $types = array(
+        'txt' => 'text/plain',
+        'htm' => 'text/html',
+        'html' => 'text/html',
+        'php' => 'text/html',
+        'css' => 'text/css',
+        'js' => 'application/javascript',
+        'json' => 'application/json',
+        'xml' => 'application/xml',
+
+        // images
+        'png' => 'image/png',
+        'jpe' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'jpg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'ico' => 'image/vnd.microsoft.icon',
+        'tiff' => 'image/tiff',
+        'tif' => 'image/tiff',
+        'svg' => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
+
+        // archives
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+        'exe' => 'application/x-msdownload',
+        'msi' => 'application/x-msdownload',
+        'cab' => 'application/vnd.ms-cab-compressed',
+
+        // audio/video
+        'mp3' => 'audio/mpeg',
+        'qt' => 'video/quicktime',
+        'mov' => 'video/quicktime',
+        'ogg'  => 'audio/ogg',
+        'f4v'  => 'video/mp4',
+        'mp4'  => 'video/mp4',
+        'ogv'  => 'video/ogg',
+        '3gp'  => 'video/3gpp',
+        'webm' => 'video/webm',
+        'swf' => 'application/x-shockwave-flash',
+        'flv' => 'video/x-flv',
+
+        // adobe
+        'pdf' => 'application/pdf',
+        'psd' => 'image/vnd.adobe.photoshop',
+        'ai' => 'application/postscript',
+        'eps' => 'application/postscript',
+        'ps' => 'application/postscript',
+
+        // ms office
+        'doc' => 'application/msword',
+        'rtf' => 'application/rtf',
+        'xls' => 'application/vnd.ms-excel',
+        'ppt' => 'application/vnd.ms-powerpoint',
+
+        // open office
+        'odt' => 'application/vnd.oasis.opendocument.text',
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet');
+
+        /* Get the file extension,
+         * FYI: this is *really* hax.
+         */
+        $extension = strtolower(array_pop(explode('.',$filename)));
+        if(function_exists('finfo_open')) {
+            /* If we don't have to guess, do it the right way */
+            $finfo = finfo_open(FILEINFO_MIME);
+            $mimetype = finfo_file($finfo, $filename);
+            finfo_close($finfo);
+            return $mimetype;
+        } elseif(array_key_exists($extension, $types)) {
+            /* If we can *guess* the mimetype based on the filename, do that */
+            return $types[$extension];
+        } else {
+            /* Otherwise, let the browser guess */
+            return 'application/octet-stream';
+        }
+    }
+
 // ==========================================================
 // Class Image Processing Methods
 // @TODO  This collection of methods need to be placed in their own Class
@@ -764,42 +851,41 @@ class expFile extends expRecord {
 
         if ($_sizeinfo = @getimagesize($_path)) {
             $_sizeinfo['is_image'] = true;
-
-            if (!isset($_sizeinfo['mime'])) {
-                // In case this implementation of getimagesize doesn't discover
-                // the mime type
-                $_types = array(
-                    'jpg'  => 'image/jpeg',
-                    'jpeg' => 'image/jpeg',
-                    'gif'  => 'image/gif',
-                    'png'  => 'image/png'
-                );
-
-                $_fileData = pathinfo($_path);
-                if (array_key_exists($_fileData['extension'], $_types)) $_sizeinfo['mime'] = $_types[$_fileData['extension']];
-            }
+//            if (!isset($_sizeinfo['mime'])) {
+//                // In case this implementation of getimagesize doesn't discover
+//                // the mime type
+//                $_types = array(
+//                    'jpg'  => 'image/jpeg',
+//                    'jpeg' => 'image/jpeg',
+//                    'gif'  => 'image/gif',
+//                    'png'  => 'image/png'
+//                );
+//
+//                $_fileData = pathinfo($_path);
+//                if (array_key_exists($_fileData['extension'], $_types)) $_sizeinfo['mime'] = $_types[$_fileData['extension']];
+//            }
         } else {
             $_sizeinfo['is_image'] = false;
-            if (!isset($_sizeinfo['mime'])) {
-                // In case this implementation of getimagesize doesn't discover
-                // the mime type
-                $_types = array(
-                    'mp3'  => 'audio/mpeg',
-                    'ogg'  => 'audio/ogg',
-                    'flv'  => 'video/x-flv',
-                    'f4v'  => 'video/mp4',
-                    'mp4'  => 'video/mp4',
-                    'ogv'  => 'video/ogg',
-                    '3gp'  => 'video/3gpp',
-                    'webm' => 'video/webm',
-                    'pdf'  => 'application/pdf',
-                );
-
-                $_fileData = pathinfo($_path);
-                if (array_key_exists($_fileData['extension'], $_types)) $_sizeinfo['mime'] = $_types[$_fileData['extension']];
-            }
+//            if (!isset($_sizeinfo['mime'])) {
+//                // In case this implementation of getimagesize doesn't discover
+//                // the mime type
+//                $_types = array(
+//                    'mp3'  => 'audio/mpeg',
+//                    'ogg'  => 'audio/ogg',
+//                    'flv'  => 'video/x-flv',
+//                    'f4v'  => 'video/mp4',
+//                    'mp4'  => 'video/mp4',
+//                    'ogv'  => 'video/ogg',
+//                    '3gp'  => 'video/3gpp',
+//                    'webm' => 'video/webm',
+//                    'pdf'  => 'application/pdf',
+//                );
+//
+//                $_fileData = pathinfo($_path);
+//                if (array_key_exists($_fileData['extension'], $_types)) $_sizeinfo['mime'] = $_types[$_fileData['extension']];
+//            }
         }
-
+        $_sizeinfo['mime'] = self::getMimeType($_path);
         $_sizeinfo['fileSize'] = self::fileSize($_path);
 
         return $_sizeinfo;
@@ -1529,13 +1615,21 @@ class expFile extends expRecord {
      */
     public static function copyDirectoryStructure($src, $dest, $exclude_dirs = array()) {
         $__oldumask = umask(0);
+        if (!is_dir($dest)) {
+            $file_path = pathinfo($dest);
+            $dest = $file_path['dirname'];
+        }
+        if (!is_dir($src)) {
+            $file_path = pathinfo($src);
+            $src = $file_path['dirname'];
+        }
         if (!file_exists($dest)) mkdir($dest, fileperms($src));
         $dh = opendir($src);
         while (($file = readdir($dh)) !== false) {
             if (is_dir("$src/$file") && !in_array($file, $exclude_dirs) && substr($file, 0, 1) != "." && $file != "CVS") {
-                if (!file_exists("$dest/$file")) mkdir("$dest/$file", fileperms("$src/$file"));
-                if (is_dir("$dest/$file")) {
-                    self::copyDirectoryStructure("$src/$file", "$dest/$file");
+                if (!file_exists($dest."/".$file)) mkdir($dest."/".$file, fileperms($src."/".$file));
+                if (is_dir($dest."/".$file)) {
+                    self::copyDirectoryStructure($src."/".$file, $dest."/".$file);
                 }
             }
         }
@@ -1580,7 +1674,6 @@ class expFile extends expRecord {
         usort($tables, 'strnatcmp');
         foreach ($tables as $table) {
             $tabledef = $db->getDataDefinition($table);
-
             $dump .= 'TABLE:' . $table . "\r\n";
             $dump .= 'TABLEDEF:' . str_replace(array("\r", "\n"), array('\r', '\n'), serialize($tabledef)) . "\r\n";
             foreach ($db->selectObjects($table) as $obj) {
@@ -1752,7 +1845,30 @@ class expFile extends expRecord {
                                 $db->insertObject($object, 'formbuilder_' . $table);
                             }
                         }
-                        $errors[] = sprintf(gt('*  However...we successfully recreated the "%s" Table from the EQL file'), $table);
+                        $errors[] = sprintf(gt('*  However...we successfully recreated the "formbuilder_%s" Table from the EQL file'), $table);
+                    }
+                }
+            }
+
+            // check for and process to rebuild new forms module data table
+            if (!empty($newformdata)) {
+                foreach ($newformdata as $tablename=>$tabledata) {
+                    $newform = $db->selectObject('forms','table_name="'.substr($tablename,6).'"');
+                    if (!empty($newform)) {
+                        // create the new table
+                        $form = new forms($newform->id);
+                        $table = $form->updateTable();
+
+                        // populate the table
+                        foreach ($tabledata as $record) {
+                            $record = str_replace('\r\n', "\r\n", $record);
+                            $object = @unserialize($record);
+                            if (!$object) $object = unserialize(stripslashes($record));
+                            if (is_object($object)) {
+                                $db->insertObject($object, 'forms_' . $table);
+                            }
+                        }
+                        $errors[] = sprintf(gt('*  However...we successfully recreated the "forms_%s" Table from the EQL file'), $table);
                     }
                 }
             }
@@ -1782,10 +1898,10 @@ class expFile extends expRecord {
 
             // rename mixed case tables if necessary
             expDatabase::fix_table_names();
-            if ($eql_version != $current_version) {
-                $errors[] = gt('EQL file was Not a valid EQL version');
-                return false;
-            }
+//            if ($eql_version != $current_version) {
+//                $errors[] = gt('EQL file was Not a valid EQL version');
+//                return false;
+//            }
             return true;
         } else {
             $errors[] = gt('Unable to read EQL file');
@@ -1812,7 +1928,7 @@ class expFile extends expRecord {
     static function updateFormbuilderTable($object) {
 		global $db;
 
-		if ($object->is_saved == 1) {
+		if (!empty($object->is_saved)) {
 			$datadef =  array(
 				'id'=>array(
 					DB_FIELD_TYPE=>DB_DEF_ID,

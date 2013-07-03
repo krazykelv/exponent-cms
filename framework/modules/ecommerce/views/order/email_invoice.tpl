@@ -43,18 +43,18 @@
             <tbody>
                 <tr>
                     <td style="border:1px solid #DEDEDE;">
-                        {$storeConfig.storename}
-                        {$storeConfig.ecomheader}
+                        {ecomconfig var=storename}
+                        {ecomconfig var=ecomheader}
                     </td>
                     <td style="border:1px solid #DEDEDE;">
                         {$order->invoice_id}
                     </td>
                     <td style="border:1px solid #DEDEDE;">
-                        {$order->purchased|date_format:"%A, %B %e, %Y"}
+                        {$order->purchased|format_date:"%A, %B %e, %Y"}
                     </td>
                     <td style="border:1px solid #DEDEDE;">
                         {if $order->shipped}
-                            {$order->shipped|date_format:"%A, %B %e, %Y":"Not Shipped Yet"}
+                            {$order->shipped|format_date:"%A, %B %e, %Y":"Not Shipped Yet"}
                         {else}
                             {"Not Shipped Yet"|gettext}
                         {/if}
@@ -321,6 +321,6 @@
         </table>
     </div>
     <div id="store-footer">
-        {$storeConfig.ecomfooter}
+        {ecomconfig var=ecomfooter}
     </div>
 </div>

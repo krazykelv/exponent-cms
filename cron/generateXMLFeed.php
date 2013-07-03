@@ -20,10 +20,11 @@
 * It will send off the ealerts.
 */
 	//Initialized the exponent
-    require_once("bootstrap.php");    
+//    require_once("bootstrap.php");    
+    require_once('../exponent.php');
    
 	//Get the filename to be use
-    $filename = EXP_PATH . 'datafeed.xml';    
+    $filename = BASE . 'datafeed.xml';    
     
 	//Header of the xml file
     $content="<?xml version='1.0' encoding='UTF-8'?>".chr(13).chr(10);
@@ -35,7 +36,7 @@
     
     //Check if the file exist
 	if (!$handle = fopen($filename, 'w')) {
-		echo "Cannot open file ($filename)";
+		echo "Cannot open file ($filename)<br>";
 		exit;
 	}
 	
@@ -64,22 +65,22 @@
 	$prodflipper[] = array();
 	$prodflipper2[] = array();
 	$prodflipper3[] = array();
-	echo "\r\nPre Count: " . count($products). "\r\n";;  
+	echo "\r\nPre Count: " . count($products). "<br>\r\n";;
 	
 	foreach ($products as $p1) {
-		@$prodflipper[$p1->id] = $p1;
+		if (!empty($p1)) @$prodflipper[$p1->id] = $p1;
 	}
-	echo "Flip Count 1: " . count($prodflipper). "\r\n";;  
+	echo "Flip Count 1: " . count($prodflipper). "<br>\r\n";;
 	
 	foreach ($prodflipper as $p2) {
-		@$prodflipper2[$p2->sef_url] = $p2;
+        if (!empty($p2)) @$prodflipper2[$p2->sef_url] = $p2;
 	}
-	echo "Flip Count 2: " . count($prodflipper2). "\r\n";;  
+	echo "Flip Count 2: " . count($prodflipper2). "<br>\r\n";;
 	
 	foreach ($prodflipper2 as $p3) {
-		@$prodflipper3[$p3->model] = $p3;
+        if (!empty($p3)) @$prodflipper3[$p3->model] = $p3;
 	}
-	echo "Flip Count 3: " . count($prodflipper3). "\r\n";;  
+	echo "Flip Count 3: " . count($prodflipper3). "<br>\r\n";;
 	
     //Google
 	foreach ($prodflipper3 as $prod) {
@@ -87,7 +88,7 @@
 		if (empty($prod->sef_url) || empty($prod->feed_title) || empty($prod->model) || empty($prod->feed_body)) continue;
 		
 		if(in_array($prod->sef_url,$counter) || isset($counter[$prod->id])) {
-			echo "No no..." . $prod->id . "\r\n";
+			echo "No no..." . $prod->id . "<br>\r\n";
 			continue;
 		}
 		else
@@ -95,9 +96,9 @@
 			
 		$count++;
 		//Get the google type categories, I used selectArraysBySql since a product can have more than 1 google taxonomy
-		/*$google_types_res = $db->selectArraysBySql("SELECT exponent_google_product_types.title FROM exponent_google_product_types, exponent_product, exponent_product_storeCategories, exponent_google_product_types_storeCategories 
-													WHERE exponent_google_product_types.id = google_product_types_id and exponent_google_product_types_storeCategories.storecategories_id = exponent_product_storeCategories.storecategories_id and 
-													exponent_product.id = exponent_product_storeCategories.product_id and exponent_product.id = {$prod->id}");
+		/*$google_types_res = $db->selectArraysBySql('SELECT '.DB_TABLE_PREFIX.'_google_product_types.title FROM '.DB_TABLE_PREFIX.'_google_product_types, '.DB_TABLE_PREFIX.'_product, '.DB_TABLE_PREFIX.'_product_storeCategories, '.DB_TABLE_PREFIX.'_google_product_types_storeCategories
+													WHERE '.DB_TABLE_PREFIX.'_google_product_types.id = google_product_types_id and '.DB_TABLE_PREFIX.'_google_product_types_storeCategories.storecategories_id = '.DB_TABLE_PREFIX.'_product_storeCategories.storecategories_id and
+													'.DB_TABLE_PREFIX.'_product.id = '.DB_TABLE_PREFIX.'_product_storeCategories.product_id and '.DB_TABLE_PREFIX.'_product.id = {$prod->id}');
                                                     */
 		$google_types = '';
 
@@ -222,14 +223,14 @@
     $action_msg = "SC";
     fclose($handle); 
     
-    echo "\r\nGenerated $count products in the Google feed.\r\n";       
+    echo "\r\nGenerated $count products in the Google feed.<br>\r\n";
     
     //end Google 
      
     //Bing
            
     //Get the filename to be use
-    $filename = EXP_PATH . 'bingshopping.txt';    
+    $filename = BASE . 'bingshopping.txt';    
     
     //Header of the xml file
     $header="MPID".chr(9)."Title".chr(9)."ProductURL".chr(9)."Description".chr(9)."ImageURL".chr(9)."Brand".chr(9)."SKU".chr(9)."Price".chr(9);
@@ -237,7 +238,7 @@
     
     //Check if the file exist
     if (!$handle = fopen($filename, 'w')) {
-        echo "Cannot open file ($filename)";
+        echo "Cannot open file ($filename)<br>";
         exit;
     }
     
@@ -255,7 +256,7 @@
         if (empty($prod->sef_url) || empty($prod->feed_title) || empty($prod->model) || empty($prod->feed_body)) continue;
         
         if(in_array($prod->sef_url,$counter) || isset($counter[$prod->id])) {
-            echo "No no..." . $prod->id . "\r\n";
+            echo "No no..." . $prod->id . "<br>\r\n";
             continue;
         }
         else
@@ -324,7 +325,7 @@
             if($path_count == 0)
             {
                 //first one, so get the root b_category''
-                $sql = 'SELECT title FROM '.DB_TABLE_PREFIX.'_bing_product_types bpt
+                $sql = 'SELECT title FROM '.DB_TABLE_PREFIX.'t_bing_product_types bpt
                     INNER JOIN '.DB_TABLE_PREFIX.'_bing_product_types_storeCategories bptsc ON
                         bptsc.bing_product_types_id = bpt.id
                     WHERE bptsc.storecategories_id = ' . $cat->id;                     
@@ -348,6 +349,6 @@
            
     //end Bing
     
-    echo "\r\nGenerated $count products in the Bing feed.\r\n";       
+    echo "\r\nGenerated $count products in the Bing feed.<br>\r\n";
          
 ?>

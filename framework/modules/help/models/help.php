@@ -57,25 +57,33 @@ class help extends expRecord {
         parent::beforeValidation();
     }
 
+    public function update($params = array()) {
+        global $db;
+
+        $this->grouping_sql = " AND help_version_id='".$this->help_version_id."'";
+		if (isset($params['help_section'])) {
+			// manipulate section & source to correct values
+			$params['section'] = $db->selectValue('sectionref', 'section', 'module = "help" AND source="' . $params['help_section'] .'"');
+			$params['src'] = $params['help_section'];
+            $params['rank'] = 0;
+		}
+        parent::update($params);
+    }
+
     /**
      * Save help item...we MUST also save the current section assigned
      *
-     * @param bool $validate
      */
     public function beforeSave() {
         global $db;
 
         $this->grouping_sql = " AND help_version_id='".$this->help_version_id."'";
-		if (isset($this->params['help_section'])) {
-			// manipulate section & location_data to correct values
-			$this->section = $db->selectValue('sectionref', 'section', 'module = "helpController" AND source="' . $this->params['help_section'] .'"');
-//			$loc = new stdClass();
-//			$loc->mod = 'help';
-//			$loc->src = $this->params['help_section'];
-//			$loc->int = '';
-            $loc = expCore::makeLocation('help',$this->params['help_section']);
-			$this->location_data = serialize($loc);
-		}
+//		if (isset($this->params['help_section'])) {
+//			// manipulate section & location_data to correct values
+//			$this->section = $db->selectValue('sectionref', 'section', 'module = "help" AND source="' . $this->params['help_section'] .'"');
+//            $loc = expCore::makeLocation('help',$this->params['help_section']);
+//			$this->location_data = serialize($loc);
+//		}
 
         parent::beforeSave();
 
@@ -226,10 +234,12 @@ class help extends expRecord {
 //    }
 
     /**
-   	 * delete item
-   	 * @param string $where
-   	 * @return bool
-   	 */
+     * delete item
+     *
+     * @param $module
+     *
+     * @return bool
+     */
 //   	public function delete($where = '') {
 //       global $db;
 //       if (empty($this->id)) return false;
@@ -250,7 +260,8 @@ class help extends expRecord {
         $module = expModules::getControllerName($module);
         
         // figure out which version we're on
-        $full_version = EXPONENT_VERSION_MAJOR.'.'.EXPONENT_VERSION_MINOR.'.'.EXPONENT_VERSION_REVISION;
+//        $full_version = EXPONENT_VERSION_MAJOR.'.'.EXPONENT_VERSION_MINOR.'.'.EXPONENT_VERSION_REVISION;
+        $full_version = expVersion::getVersion(true,false,false);
 
         $link  = HELP_URL;
         $link .= 'docs';

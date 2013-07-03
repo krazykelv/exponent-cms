@@ -162,6 +162,14 @@ class expString {
     	$find[] = '�';  // em dash
     	$find[] = '�';  // en dash
 
+        $replace[] = '"';
+       	$replace[] = '"';
+       	$replace[] = "'";
+       	$replace[] = "'";
+       	$replace[] = "...";
+       	$replace[] = "-";
+       	$replace[] = "-";
+
         $find[] = '“';  // left side double smart quote
         $find[] = '”';  // right side double smart quote
         $find[] = '‘';  // left side single smart quote
@@ -170,24 +178,6 @@ class expString {
         $find[] = '—';  // em dash
         $find[] = '–';  // en dash
 
-        $find[] = chr(145);
-        $find[] = chr(146);
-        $find[] = chr(147);
-        $find[] = chr(148);
-        $find[] = chr(150);
-        $find[] = chr(151);
-        $find[] = chr(133);
-        $find[] = chr(149);
-        $find[] = chr(11);
-
-    	$replace[] = '"';
-    	$replace[] = '"';
-    	$replace[] = "'";
-    	$replace[] = "'";
-    	$replace[] = "...";
-    	$replace[] = "-";
-    	$replace[] = "-";
-
         $replace[] = '"';
         $replace[] = '"';
         $replace[] = "'";
@@ -196,15 +186,25 @@ class expString {
         $replace[] = "-";
         $replace[] = "-";
 
-        $replace[] = "'";
-        $replace[] = "'";
-        $replace[] = "\"";
-        $replace[] = "\"";
-        $replace[] = "-";
-        $replace[] = "-";
-        $replace[] = "...";
-        $replace[] = "&bull;";
-        $replace[] = "\n";
+//        $find[] = chr(145);
+//        $find[] = chr(146);
+//        $find[] = chr(147);
+//        $find[] = chr(148);
+//        $find[] = chr(150);
+//        $find[] = chr(151);
+//        $find[] = chr(133);
+//        $find[] = chr(149);
+//        $find[] = chr(11);
+//
+//        $replace[] = "'";
+//        $replace[] = "'";
+//        $replace[] = "\"";
+//        $replace[] = "\"";
+//        $replace[] = "-";
+//        $replace[] = "-";
+//        $replace[] = "...";
+//        $replace[] = "&bull;";
+//        $replace[] = "\n";
 
     	return str_replace($find, $replace, $str);
     }
@@ -228,9 +228,29 @@ class expString {
         }
 
         // a mySQL connection is required before using this function
-        $data = $db->escapeString($data);
+        if ($db->havedb) {
+            $data = $db->escapeString($data);
+        } else {
+            $data = self::escape($data);
+        }
 
         return $data;
+    }
+
+    /**\
+     * Replace any non-ascii character with its hex code with NO active db connection
+     */
+    function escape($value) {
+        $return = '';
+        for($i = 0; $i < strlen($value); ++$i) {
+            $char = $value[$i];
+            $ord = ord($char);
+            if($char !== "'" && $char !== "\"" && $char !== '\\' && $ord >= 32 && $ord <= 126)
+                $return .= $char;
+            else
+                $return .= '\\x' . dechex($ord);
+        }
+        return $return;
     }
 
 }

@@ -57,9 +57,9 @@ function smarty_function_icon($params, &$smarty) {
         if (!empty($record)) {
             $modloc = expUnserialize($record->location_data);
             $params['src'] = $modloc->src;
-        } else if (!empty($params['controller']) || @call_user_func(array($loc->mod . 'Controller', 'hasSources'))) {
+        } else if (!empty($params['controller']) || @call_user_func(array(expModules::getModuleClassName($loc->mod), 'hasSources'))) {
             $params['src'] = $loc->src;
-        } elseif (!empty($params['module']) || @call_user_func(array($loc->mod . 'module', 'hasSources'))) {
+        } elseif (!empty($params['module']) || @call_user_func(array(expModules::getModuleClassName($loc->mod), 'hasSources'))) {
             $params['src'] = $loc->src;
         }
     }
@@ -120,7 +120,7 @@ function smarty_function_icon($params, &$smarty) {
             $params['action'] = 'edit';
         }
         echo '<a href="' . expCore::makeLink($params) . '" title="' . $title . '" class="' . $class . '"';
-        if (($params['action'] == "delete" || $params['action'] == "merge") && empty($onclick))
+        if (($params['action'] == "delete" || $params['action'] == "merge" || $class == "delete" || $class == "merge") && empty($onclick))
             echo ' onclick="return confirm(\'' . gt('Are you sure you want to') . ' ' . $params['action'] . ' ' . gt('this') . ' ' . $smarty->getTemplateVars('modelname') . ' ' . gt('item') . '?\');"';
 //        if ($params['action']=="merge" && empty($onclick))
 //            echo ' onclick="return confirm(\''.gt('Are you sure you want to merge this').' '.$smarty->getTemplateVars('modelname').' '.gt('item').'?\');"';
@@ -133,7 +133,7 @@ function smarty_function_icon($params, &$smarty) {
             echo ' onclick="' . $onclick . '"';
         echo '>' . $linktext . '</a>';
     } else {
-        echo $linktext;
+        echo '<span class="'.$class.'"> '.$linktext.'</span>';
     }
 }
 
