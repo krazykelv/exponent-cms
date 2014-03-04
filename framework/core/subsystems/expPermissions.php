@@ -84,6 +84,12 @@ class expPermissions {
 	public static function check($permission,$location) {
 		global $exponent_permissions_r, $user, $db, $module_scope;
 
+        if (!empty($user->id)) {
+            if ($user->isAdmin()) return true;  // admin users always have permissions
+        } else {
+            return false;  // anonymous/logged-out user never has permission
+        }
+
         if (expModules::controllerExists($location->mod)) {
             $mod = expModules::getController($location->mod);
             if (method_exists($mod, 'checkPermissions')){
@@ -91,11 +97,6 @@ class expPermissions {
             }
         }
 
-		if (!empty($user->id)) {
-			if ($user->isAdmin()) return true;  // admin users always have permissions
-		} else {
-			return false;  // anonymous/logged-out user never has permission
-		}
         $ploc = clone $location;
 //        $ploc->mod = expModules::controllerExists($ploc->mod) ? expModules::getControllerClassName($ploc->mod) : $ploc->mod;  //FIXME long controller name
         $ploc->mod = expModules::getModuleName(($ploc->mod));
@@ -103,10 +104,10 @@ class expPermissions {
 		if (!is_array($permission)) $permission = array($permission);
         // always check for 'manage' permission
         $permission[] = 'manage';
-        // create permission implies edit permission
-        if (array_intersect(array('edit'),$permission)) {
-            $permission[] = 'create';
-        }
+        // create permission implies edit permission  //FIXME for v2.2.2 and earlier this was true
+//        if (array_intersect(array('edit'),$permission)) {
+//            $permission[] = 'create';
+//        }
         $permission = array_unique($permission);  // strip out duplicates
 
 //		if (is_callable(array($ploc->mod,"getLocationHierarchy"))) {  //FIXME this is only available in calendarmodule, may not be needed if there is no 'int' property?
@@ -519,7 +520,7 @@ class expPermissions {
 
 //        $mod = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;  //FIXME long controller name
         $mod = expModules::getModuleName($location->mod);
-		return $db->delete("userpermission","uid=" . $user->id . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
+		return $db->delete("userpermission","uid=" . $user . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
 	}
 
 	/** exdoc
@@ -537,7 +538,7 @@ class expPermissions {
 
 //        $mod = expModules::controllerExists($location->mod) ? expModules::getControllerClassName($location->mod) : $location->mod;  //FIXME long controller name
         $mod = expModules::getModuleName($location->mod);
-		return $db->delete('grouppermission','gid=' . $group->id . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
+		return $db->delete('grouppermission','gid=' . $group . " AND module='" . $mod . "' AND source='" . $location->src . "' AND internal='" . $location->int . "'");
 	}
 
     /** exdoc

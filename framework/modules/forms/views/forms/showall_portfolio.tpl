@@ -24,6 +24,10 @@
         {/if}
         {permissions}
             <div class="module-actions">
+                {if $permissions.create}
+                    {icon class=add action=enterdata forms_id=$f->id text='Add record'|gettext}
+                    &#160;&#160;|&#160;&#160;
+                {/if}
                 {icon class="downloadfile" action=export_csv id=$f->id text="Export as CSV"|gettext}
                 {export_pdf_link landscapepdf=1 limit=999 prepend='&#160;&#160;|&#160;&#160;'}
                 {if $permissions.manage}
@@ -39,10 +43,10 @@
             {foreach from=$page->records item=fields key=key name=fields}
                 <div class="item-actions">
                     <td>
-                        {if $permissions.edit == 1}
+                        {if $permissions.edit}
                             {icon class=edit action=enterdata forms_id=$f->id id=$fields.id title='Edit this record'|gettext}
                         {/if}
-                        {if $permissions.delete == 1}
+                        {if $permissions.delete}
                             {icon class=delete action=delete forms_id=$f->id id=$fields.id title='Delete this record'|gettext}
                         {/if}
                     </td>
@@ -60,7 +64,7 @@
                     </table>
                 {else}
                     {eval var=$config.report_def}
-                    {clear}{br}
+                    {clear}
                 {/if}
             {/foreach}
         </div>

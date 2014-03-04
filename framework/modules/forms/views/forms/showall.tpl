@@ -24,6 +24,10 @@
         {/if}
         {permissions}
             <div class="module-actions">
+                {if $permissions.create}
+                    {icon class=add action=enterdata forms_id=$f->id text='Add record'|gettext}
+                    &#160;&#160;|&#160;&#160;
+                {/if}
                 {icon class="downloadfile" action=export_csv id=$f->id text="Export as CSV"|gettext}
                 {export_pdf_link landscapepdf=1 limit=999 prepend='&#160;&#160;|&#160;&#160;'}
                 {if $permissions.manage}
@@ -36,7 +40,7 @@
         {/permissions}
         {$page->links}
         <div style="overflow: auto; overflow-y: hidden;">
-            <table border="0" cellspacing="0" cellpadding="0" class="exp-skin-table">
+            <table id="forms-showall" border="0" cellspacing="0" cellpadding="0" class="exp-skin-table">
                 <thead>
                     <tr>
                         {$page->header_columns}
@@ -60,10 +64,10 @@
                             <div class="item-actions">
                                 <td>
                                     {icon img="view.png" action=show forms_id=$f->id id=$fields.id title='View all data fields for this record'|gettext}
-                                    {if $permissions.edit == 1}
+                                    {if $permissions.edit}
                                         {icon img="edit.png" action=enterdata forms_id=$f->id id=$fields.id title='Edit this record'|gettext}
                                     {/if}
-                                    {if $permissions.delete == 1}
+                                    {if $permissions.delete}
                                         {icon img="delete.png" action=delete forms_id=$f->id id=$fields.id title='Delete this record'|gettext}
                                     {/if}
                                 </td>
@@ -74,6 +78,14 @@
             </table>
         </div>
         {$page->links}
-        <a class="awesome {$smarty.const.BTN_SIZE} {$smarty.const.BTN_COLOR}" href="{$backlink}">{'Back'|gettext}</a>
+        {*<a class="awesome {$smarty.const.BTN_SIZE} {$smarty.const.BTN_COLOR}" href="{$backlink}">{'Back'|gettext}</a>*}
     </div>
 {/if}
+
+{script unique="form-showall" jquery='jquery.dataTables'}
+{literal}
+    $(document).ready(function() {
+        $('#forms-showall').dataTable();
+    } );
+{/literal}
+{/script}

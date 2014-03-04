@@ -25,7 +25,7 @@
     {pagelinks paginate=$page top=1}
     {permissions}
 		<div class="module-actions">
-			{if $permissions.edit == 1}
+			{if $permissions.create}
 				{icon class=add action=edit text="Add a New Message"|gettext}
 			{/if}
 		</div>
@@ -43,35 +43,35 @@
 		</thead>
 		<tbody>
 			{foreach from=$page->records item=listing name=listings}
-			<tr class="{cycle values="odd,even"}">
-				<td>{$listing->month}/{$listing->day}</td>
-				<td>{$listing->body}</td>
-				<td>
-					{permissions}
-						<div class="item-actions">
-							{if $permissions.edit == 1}
-                                {if $myloc != $listing->location_data}
-                                    {if $permissions.manage == 1}
-                                        {icon action=merge id=$listing->id title="Merge Aggregated Content"|gettext}
-                                    {else}
-                                        {icon img='arrow_merge.png' title="Merged Content"|gettext}
+                <tr class="{cycle values="odd,even"}">
+                    <td>{$listing->month}/{$listing->day}</td>
+                    <td>{$listing->body}</td>
+                    <td>
+                        {permissions}
+                            <div class="item-actions">
+                                {if $permissions.edit || ($permissions.create && $listing->poster == $user->id)}
+                                    {if $myloc != $listing->location_data}
+                                        {if $permissions.manage}
+                                            {icon action=merge id=$listing->id title="Merge Aggregated Content"|gettext}
+                                        {else}
+                                            {icon img='arrow_merge.png' title="Merged Content"|gettext}
+                                        {/if}
                                     {/if}
+                                    {icon action=edit record=$listing title="Edit this message"|gettext}
                                 {/if}
-								{icon action=edit record=$listing title="Edit this message"|gettext}
-							{/if}
-							{if $permissions.delete == 1}
-								{icon action=delete record=$listing title="Delete this message"|gettext onclick="return confirm('"|cat:("Are you sure you want to delete this message?"|gettext)|cat:"');"}
-							{/if}
-						</div>
-					{/permissions}  
-				</td>                   
-			</tr>
+                                {if $permissions.delete || ($permissions.create && $listing->poster == $user->id)}
+                                    {icon action=delete record=$listing title="Delete this message"|gettext onclick="return confirm('"|cat:("Are you sure you want to delete this message?"|gettext)|cat:"');"}
+                                {/if}
+                            </div>
+                        {/permissions}
+                    </td>
+                </tr>
 			{foreachelse}
 				<tr class="{cycle values="odd,even"}">
-				<td colspan="6">
-					{'There are no messages yet.'|gettext}
-				</td>                   
-			</tr>
+                    <td colspan="6">
+                        {'There are no messages yet.'|gettext}
+                    </td>
+                </tr>
 			{/foreach}
 		</tbody>
     </table>

@@ -26,7 +26,7 @@
     <div class="info-header">
         <div class="related-actions">
             {if !empty($page)}
-                {help text="Get Help wiht"|gettext|cat:" "|cat:("Managing"|gettext|cat:" `$catnames`") module="manage-categories"}
+                {help text="Get Help with"|gettext|cat:" "|cat:("Managing"|gettext|cat:" `$catnames`") module="manage-categories"}
             {elseif $model == 'file'}
                 {help text="Get Help with"|gettext|cat:" "|cat:("Managing"|gettext|cat:" `$catnames`") module="manage-file-folders"}
             {else}
@@ -36,7 +36,7 @@
         <h1>{"Manage"|gettext|cat:" `$catnames`"}</h1>
     </div>
 	{permissions}
-    	{if $permissions.create == 1}
+    	{if $permissions.create}
             {if !empty($page)}
                 {icon class="add" controller=$model_name action=edit model=$page->model rank=1 text="Create a new"|gettext|cat:" `$catname`"}
             {else}
@@ -101,7 +101,7 @@
             {/if}
             {foreach name=items from=$cats->modules key=moduleid item=module}
                 <div id="tab{$smarty.foreach.items.iteration}">
-                    {if $permissions.manage == 1}
+                    {if $permissions.manage}
                         {*{ddrerank id=$moduleid items=$cats->records model="expCat" module=$moduleid label=$moduleid|cat:' '|cat:"Categories"|gettext}*}
                         {ddrerank id=$moduleid items=$module model="expCat" module=$moduleid label=$moduleid|cat:' '|cat:$catnames}
                     {/if}
@@ -132,10 +132,10 @@
                                     </td>
                                     <td>
                                         {permissions}
-                                            {if $permissions.edit == 1}
+                                            {if $permissions.edit}
                                                 {icon controller=$controller action=edit record=$listing title="Edit this"|gettext|cat:" `$catname`"}
                                             {/if}
-                                            {if $permissions.delete == 1}
+                                            {if $permissions.delete}
                                                 {icon controller=$controller action=delete record=$listing title="Delete this"|gettext|cat:" `$catname`" onclick="return confirm('"|cat:("Are you sure you want to delete this?"|gettext)|cat:"');"}
                                             {/if}
                                         {/permissions}

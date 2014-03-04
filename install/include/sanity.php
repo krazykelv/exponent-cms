@@ -78,7 +78,7 @@ function sanity_checkFile($file,$as_file,$flags) {
 }
 
 function sanity_checkDirectory($dir,$flag) {
-	$status = sanity_checkFile(BASE.$dir,0,$flag);
+	$status = sanity_checkFile(BASE.$dir,false,$flag);
 	if ($status != SANITY_FINE) {
 		return $status;
 	}
@@ -88,7 +88,7 @@ function sanity_checkDirectory($dir,$flag) {
 		while (($file = readdir($dh)) !== false) {
 			if ($file{0} != '.' && $file != 'CVS') {
 				if (is_file(BASE.$dir.'/'.$file)) {
-					$status = sanity_checkFile(BASE.$dir.'/'.$file,1,$flag);
+					$status = sanity_checkFile(BASE.$dir.'/'.$file,true,$flag);
 					if ($status != SANITY_FINE) {
 						return $status;
 					}
@@ -106,23 +106,24 @@ function sanity_checkDirectory($dir,$flag) {
 
 function sanity_checkFiles() {
 	$status = array(
-		'framework/conf/config.php'=>sanity_checkFile(BASE.'framework/conf/config.php',1,SANITY_CREATEFILE),
-		'files/'=>sanity_checkDirectory('files',SANITY_READWRITE),
-        'files/uploads/'=>sanity_checkDirectory('files',SANITY_READWRITE),
-        'files/avatars/'=>sanity_checkDirectory('files',SANITY_READWRITE),
-		'install/'=>sanity_checkFile(BASE.'install',0,SANITY_READWRITE),
-		'framework/modules/'=>sanity_checkDirectory('framework/modules',SANITY_READWRITE),
-		//'framework/conf/profiles/'=>sanity_checkFile(BASE.'framework/conf/profiles',0,SANITY_READWRITE),
+//        'framework/modules/'=>sanity_checkDirectory('framework/modules',SANITY_READWRITE),
+		'framework/conf/config.php'=>sanity_checkFile(BASE.'framework/conf/config.php',true,SANITY_CREATEFILE),
+		'framework/conf/profiles/'=>sanity_checkFile(BASE.'framework/conf/profiles',false,SANITY_READWRITE),
+//		'files/'=>sanity_checkDirectory('files',SANITY_READWRITE),
+        'files/'=>sanity_checkFile('files',false,SANITY_READWRITE),  // we're only concerned about the folder itself and NOT the contents
+        'files/uploads/'=>sanity_checkDirectory('files/uploads',SANITY_READWRITE),
+        'files/avatars/'=>sanity_checkDirectory('files/avatars',SANITY_READWRITE),
+		'install/'=>sanity_checkFile(BASE.'install',false,SANITY_READWRITE),
 		//'overrides.php'=>sanity_checkFile(BASE.'overrides.php',1,SANITY_READWRITE),
 		'tmp/'=>sanity_checkDirectory('tmp',SANITY_READWRITE),
-		'tmp/extensionuploads/'=>sanity_checkFile(BASE.'tmp/extensionuploads',0,SANITY_READWRITE),
-		'tmp/views_c'=>sanity_checkDirectory('tmp/views_c',SANITY_READWRITE),
 		'tmp/cache'=>sanity_checkDirectory('tmp/cache',SANITY_READWRITE),
+        'tmp/css'=>sanity_checkDirectory('tmp/css',SANITY_READWRITE),
+        'tmp/extensionuploads'=>sanity_checkFile(BASE.'tmp/extensionuploads',true,SANITY_READWRITE),
+        'tmp/img_cache'=>sanity_checkDirectory('tmp/img_cache',SANITY_READWRITE),
 		'tmp/minify'=>sanity_checkDirectory('tmp/minify',SANITY_READWRITE),
-		'tmp/css'=>sanity_checkDirectory('tmp/css',SANITY_READWRITE),
+        'tmp/pixidou'=>sanity_checkDirectory('tmp/pixidou',SANITY_READWRITE),
 		'tmp/rsscache'=>sanity_checkDirectory('tmp/rsscache',SANITY_READWRITE),
-		'tmp/img_cache'=>sanity_checkDirectory('tmp/img_cache',SANITY_READWRITE),
-		'tmp/pixidou'=>sanity_checkDirectory('tmp/pixidou',SANITY_READWRITE)
+        'tmp/views_c'=>sanity_checkDirectory('tmp/views_c',SANITY_READWRITE),
 	);
 	
 	return $status;
@@ -135,6 +136,8 @@ function sanity_checkServer() {
 		'PHP 5.2.1+'=>_sanity_checkPHPVersion(),
 		gt('ZLib Support')=>_sanity_checkZlib(),
         gt('cURL Library Support')=>_sanity_checkcURL(),
+        gt('FileInfo Support')=>_sanity_checkFileinfo(),
+        gt('File Upload Support')=>_sanity_checkUploadSize(),
 		gt('XML (Expat) Library Support')=>_sanity_checkXML(),
 		gt('Safe Mode Not Enabled')=>_sanity_CheckSafeMode(),
 		gt('Open BaseDir Not Enabled')=>_sanity_checkOpenBaseDir(),
@@ -175,6 +178,23 @@ function _sanity_checkcURL() {
 		return array(SANITY_FINE,gt('Passed'));
 	} else {
 		return array(SANITY_ERROR,gt('Failed'));
+	}
+}
+
+function _sanity_checkFileinfo() {
+	if (function_exists('finfo_open')) {
+		return array(SANITY_FINE,gt('Passed'));
+	} else {
+//		return array(SANITY_ERROR,gt('Failed'));
+        return array(SANITY_WARNING,gt('No FileInfo Support'));
+	}
+}
+
+function _sanity_checkUploadSize() {
+	if (intval(ini_get('upload_max_filesize'))==intval(ini_get('post_max_size'))) {
+		return array(SANITY_FINE,gt('Upload size limit').': '.expCore::maxUploadSize());
+	} else {
+        return array(SANITY_WARNING,gt('php.ini \'"post_max_size\' and \'upload_max_filesize\' don\' match').': '.ini_get('upload_max_filesize'));
 	}
 }
 

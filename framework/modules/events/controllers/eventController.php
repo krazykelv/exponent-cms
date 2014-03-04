@@ -31,10 +31,12 @@ class eventController extends expController {
     public $remove_configs = array(
         'comments',
         'ealerts',
+//        'facebook',
         'files',
         'pagination',
         'rss',
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+//        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
 
     static function displayname() {
         return "Events";
@@ -409,13 +411,13 @@ class eventController extends expController {
                         $begin = null;
                         $end = null;
                 }
-                $items = $this->getEventsForDates($dates, $sort_asc, isset($this->config['only_featured']) ? true : false);
+                $items = $this->getEventsForDates($dates, $sort_asc, isset($this->config['only_featured']) ? true : false, true);
                 if ($viewrange != 'past') {
                     $extitems = $this->getExternalEvents($this->loc, $begin, $end);
                     // we need to crunch these down
                     $extitem = array();
-                    foreach ($extitems as $key => $days) {
-                        foreach ($days as $key => $event) {
+                    foreach ($extitems as $days) {
+                        foreach ($days as $event) {
                             if (empty($event->eventdate->date) || ($viewrange == 'upcoming' && $event->eventdate->date < time())) break;
                             if (empty($event->eventstart)) $event->eventstart = $event->eventdate->date;
                             $extitem[] = $event;
@@ -425,8 +427,8 @@ class eventController extends expController {
                     if (!empty($this->config['aggregate_registrations'])) $regitems = eventregistrationController::getRegEventsForDates($begin, $end, $regcolor);
                     // we need to crunch these down
                     $regitem = array();
-                    if (!empty($regitems)) foreach ($regitems as $key => $days) {
-                        foreach ($days as $key => $value) {
+                    if (!empty($regitems)) foreach ($regitems as $days) {
+                        foreach ($days as $value) {
                             $regitem[] = $value;
                         }
                     }
@@ -465,14 +467,14 @@ class eventController extends expController {
      */
     function show() {
         expHistory::set('viewable', $this->params);
-        if (!empty($this->params['date_id'])) {
+        if (!empty($this->params['date_id'])) {  // specific event instance
             $eventdate = new eventdate($this->params['date_id']);
             $eventdate->event = new event($eventdate->event_id);
-        } else {
+        } else {  // we'll default to the first event of this series
             $event = new event($this->params['id']);
             $eventdate = new eventdate($event->eventdate[0]->id);
         }
-        if (!empty($eventdate->event->feedback_form)) {
+        if (!empty($eventdate->event->feedback_form) && $eventdate->event->feedback_form != 'Disallow Feedback') {
             assign_to_template(array(
                 'feedback_form' => $eventdate->event->feedback_form,
             ));
@@ -484,12 +486,21 @@ class eventController extends expController {
     }
 
     function edit() {
+        global $template;
+
         parent::edit();
         $allforms = array();
         $allforms[""] = gt('Disallow Feedback');
+        // calculate which event date is the one being edited
+        $event_key = 0;
+        foreach ($template->tpl->tpl_vars['record']->value->eventdate as $key=>$d) {
+       	    if ($d->id == $this->params['date_id']) $event_key = $key;
+       	}
+
         assign_to_template(array(
             'allforms'     => array_merge($allforms, expCore::buildNameList("forms", "event/email", "tpl", "[!_]*")),
             'checked_date' => !empty($this->params['date_id']) ? $this->params['date_id'] : null,
+            'event_key'    => $event_key,
         ));
     }
 
@@ -530,7 +541,8 @@ class eventController extends expController {
             }
             expHistory::back();
         } else {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
         }
     }
 
@@ -551,7 +563,7 @@ class eventController extends expController {
    	function metainfo() {
        global $router;
 
-       $metainfo = array('title' => '', 'keywords' => '', 'description' => '', 'canonical'=> '');
+       $metainfo = array('title' => '', 'keywords' => '', 'description' => '', 'canonical'=> '', 'noindex' => '', 'nofollow' => '');
        // look for event date_id which expController::metainfo won't detect
 //       if (!empty($router->params['action']) && $router->params['action'] == 'show' && !isset($_REQUEST['id']) && isset($_REQUEST['date_id'])) {
        if (!empty($router->params['action']) && $router->params['action'] == 'show' && !isset($router->params['id']) && isset($router->params['date_id'])) {
@@ -560,10 +572,26 @@ class eventController extends expController {
            $object = new eventdate(intval($router->params['date_id']));
            // set the meta info
            if (!empty($object)) {
+               if (!empty($object->event->body)) {
+                   $desc = str_replace('"',"'",expString::summarize($object->event->body,'html','para'));
+               } else {
+                   $desc = SITE_DESCRIPTION;
+               }
+               if (!empty($object->expTag)) {
+                   $keyw = '';
+                   foreach ($object->expTag as $tag) {
+                       if (!empty($keyw)) $keyw .= ', ';
+                       $keyw .= $tag->title;
+                   }
+               } else {
+                   $keyw = SITE_KEYWORDS;
+               }
                $metainfo['title'] = empty($object->event->meta_title) ? $object->event->title : $object->event->meta_title;
-               $metainfo['keywords'] = empty($object->event->meta_keywords) ? SITE_KEYWORDS : $object->event->meta_keywords;
-               $metainfo['description'] = empty($object->event->meta_description) ? SITE_DESCRIPTION : $object->event->meta_description;
+               $metainfo['keywords'] = empty($object->event->meta_keywords) ? $keyw : $object->event->meta_keywords;
+               $metainfo['description'] = empty($object->event->meta_description) ? $desc : $object->event->meta_description;
                $metainfo['canonical'] = empty($object->event->canonical) ? '' : $object->event->canonical;
+               $metainfo['noindex'] = empty($object->event->meta_noindex) ? false : $object->event->meta_noindex;
+               $metainfo['nofollow'] = empty($object->event->meta_nofollow) ? false : $object->event->meta_nofollow;
            }
            return $metainfo;
        } else {
@@ -836,10 +864,12 @@ class eventController extends expController {
                 echo $msg;
                 exit();
             } else {
-                echo SITE_404_HTML;
+//                echo SITE_404_HTML;
+                notfoundController::handle_not_found();
             }
         } else {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
         }
     }
 
@@ -863,11 +893,13 @@ class eventController extends expController {
             }
 
             if (empty($this->config['reminder_active'])) {
-                echo SITE_404_HTML;
+//                echo SITE_404_HTML;
+                notfoundController::handle_not_found();
                 return;
             }
             if (!empty($this->config['reminder_code']) && (empty($this->params['code']) || ($this->params['code'] != $this->config['reminder_code']))) {
-                echo SITE_403_HTML;
+//                echo SITE_403_HTML;
+                notfoundController::handle_not_authorized();
                 return;
             }
 
@@ -876,7 +908,7 @@ class eventController extends expController {
 
             $view = (isset($this->params['view']) ? $this->params['view'] : '');
             if ($view == "") {
-                $view = "_reminder"; // default reminder view
+                $view = "send_reminders"; // default reminder view
             }
 
             $template = get_template_for_action($this, $view, $this->loc);
@@ -938,7 +970,7 @@ class eventController extends expController {
             );
 
             // set up the html message
-            $template->assign("showdetail", $this->config['email_showdetail']);
+            $template->assign("showdetail", !empty($this->config['email_showdetail']));
             $htmlmsg = $template->render();
 
             // now the same thing for the text message
@@ -990,13 +1022,23 @@ class eventController extends expController {
         }
     }
 
-    function getEventsForDates($edates, $sort_asc = true, $featuredonly = false) {
+    function getEventsForDates($edates, $sort_asc = true, $featuredonly = false, $condense = false) {
+        global $eventid;
+
         $events = array();
         $featuresql = "";
         if ($featuredonly) $featuresql = " AND is_featured=1";
         foreach ($edates as $edate) {
             $evs = $this->event->find('all', "id=" . $edate->event_id . $featuresql);
             foreach ($evs as $key=>$event) {
+                if ($condense) {
+                    $eventid = $event->id;
+                    $multiday_event = array_filter($events, create_function('$event', 'global $eventid; return $event->id === $eventid;'));
+                    if (!empty($multiday_event)) {
+                        unset($evs[$key]);
+                        continue;
+                    }
+                }
                 $evs[$key]->eventstart += $edate->date;
                 $evs[$key]->eventend += $edate->date;
                 $evs[$key]->date_id = $edate->id;

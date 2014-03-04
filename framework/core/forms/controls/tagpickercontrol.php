@@ -35,24 +35,21 @@ class tagpickercontrol extends formcontrol {
         return "Tag Picker";
     }
 
-    static function isSimpleControl() {
-        return false;
-    }
-
     static function getFieldDefinition() {
         return array();
     }
 
     function __construct($collections = array(), $subtype = null) {
-        global $db;
+//        global $db;
 
 //		$this->tags = $db->selectNestedTree('expTags');
 //        $this->tags    = $db->selectObjects('expTags', 1);
-        $tags = $db->selectObjects('expTags','1','title ASC');
-   		$this->taglist = '';
-        foreach ($tags as $tag) {
-            $this->taglist .= "'".$tag->title."',";
-        }
+//        $tags = $db->selectObjects('expTags','1','title ASC');
+//   		$this->taglist = '';
+//        foreach ($tags as $tag) {
+//            $this->taglist .= "'".$tag->title."',";
+//        }
+        $this->taglist = expTag::getAllTags();
         $this->subtype = isset($subtype) ? $subtype : '';
     }
 

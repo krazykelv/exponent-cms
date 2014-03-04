@@ -31,10 +31,12 @@ class photosController extends expController {
     public $remove_configs = array(
         'comments',
         'ealerts',
+        'facebook',
         'files',
         'pagination',  // we need to customize it in this module?
-        'rss'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'rss',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Photo Album"); }
     static function description() { return gt("Displays and manages images."); }
@@ -71,7 +73,8 @@ class photosController extends expController {
     }
     
     function show() {
-        global $db;
+//        global $db;
+
         expHistory::set('viewable', $this->params);
         
         // figure out if we're looking this up by id or title
@@ -83,28 +86,31 @@ class photosController extends expController {
         }
         $record = new photo($id);
         $where = $this->aggregateWhereClause();
-        $maxrank = $db->max($this->model_table,'rank','',$where);
-                
-        $next = $db->selectValue($this->model_table,'sef_url',$where." AND rank=".($record->rank+1));
-        $prev = $db->selectValue($this->model_table,'sef_url',$where." AND rank=".($record->rank-1));
+//        $maxrank = $db->max($this->model_table,'rank','',$where);
+//
+//        $record->next = $db->selectValue($this->model_table,'sef_url',$where." AND rank=".($record->rank+1));
+//        $record->prev = $db->selectValue($this->model_table,'sef_url',$where." AND rank=".($record->rank-1));
+//
+//        if ($record->rank==$maxrank) {
+//            $where = $where." AND rank=1";
+//            $record->next = $db->selectValue($this->model_table,'sef_url',$where);
+//        }
+//
+//        if ($record->rank==1) {
+//            $where = $where." AND rank=".$maxrank;
+//            $record->prev = $db->selectValue($this->model_table,'sef_url',$where);
+//        }
+        $record->addNextPrev($where);
 
-        if ($record->rank==$maxrank) {
-            $where = $where." AND rank=1";
-            $next = $db->selectValue($this->model_table,'sef_url',$where);
-        }
-        
-        if ($record->rank==1) {
-            $where = $where." AND rank=".$maxrank;
-            $prev = $db->selectValue($this->model_table,'sef_url',$where);
-        }
-        $config = expUnserialize($db->selectValue('expConfigs','config',"location_data='".$record->location_data."'"));
+//        $config = expUnserialize($db->selectValue('expConfigs','config',"location_data='".$record->location_data."'"));
+        $config = expConfig::getConfig($record->location_data);
 
         assign_to_template(array(
             'record'=>$record,
             'imgnum'=>$record->rank,
             'imgtot'=>count($record->find('all',$this->aggregateWhereClause())),
-            "next"=>$next,
-            "previous"=>$prev,
+//            "next"=>$next,
+//            "previous"=>$prev,
             'config'=>$config
         ));
     }
@@ -166,13 +172,14 @@ class photosController extends expController {
     }
 
     public function multi_add() {
-        global $db;
+//        global $db;
 
-        $tags = $db->selectObjects('expTags', '1', 'title ASC');
-        $taglist = '';
-        foreach ($tags as $tag) {
-            $taglist .= "'" . $tag->title . "',";
-        }
+//        $tags = $db->selectObjects('expTags', '1', 'title ASC');
+//        $taglist = '';
+//        foreach ($tags as $tag) {
+//            $taglist .= "'" . $tag->title . "',";
+//        }
+        $taglist = expTag::getAllTags();
         $modelname = $this->basemodel_name;
         assign_to_template(array(
 //            'record'     => $record,
@@ -183,7 +190,7 @@ class photosController extends expController {
     }
 
     public function multi_update() {
-        global $db;
+//        global $db;
 
         if (!empty($this->params['expFile'])) {
             if (!empty($this->params['title'])) {

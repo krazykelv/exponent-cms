@@ -32,16 +32,18 @@ class formsController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
 //        'pagination',
         'rss',
-        'tags'
-    ); // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'tags',
+        'twitter',
+    ); // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
     public $add_permissions = array(
         'viewdata'  => "View Data",
         'enter_data' => "Enter Data"  // slight naming variation to not fully restrict enterdata method
     );
-    public $codequality = 'beta';
+//    public $codequality = 'beta';
 
     static function displayname() {
         return gt("Forms");
@@ -83,7 +85,12 @@ class formsController extends expController {
                 $this->get_defaults($f);
             }
 //            $items = $db->selectObjects('forms_' . $f->table_name, 1);
-            $items = $db->selectArrays('forms_' . $f->table_name, 1);
+            if (empty($this->config['report_filter'])) {
+                $where = '1';
+            } else {
+                $where = $this->config['report_filter'];
+            }
+            $items = $db->selectArrays('forms_' . $f->table_name, $where);
             $columns = array();
             $fc = new forms_control();
             if (empty($this->config['column_names_list'])) {
@@ -155,7 +162,8 @@ class formsController extends expController {
             ));
 
             assign_to_template(array(
-                "backlink"    => expHistory::getLastNotEditable(),
+//                "backlink"    => expHistory::getLastNotEditable(),
+                "backlink"    => expHistory::getLast('viewable'),
                 "f"           => $f,
                 "page"        => $page,
                 "title"       => !empty($this->config['report_name']) ? $this->config['report_name'] : '',
@@ -169,7 +177,6 @@ class formsController extends expController {
     }
 
     public function show() {
-
         if (!empty($this->config['unrestrict_view']) || expPermissions::check('viewdata', $this->loc)) {
             global $db;
 
@@ -213,7 +220,8 @@ class formsController extends expController {
 
             assign_to_template(array(
     //            "backlink"=>expHistory::getLastNotEditable(),
-                'backlink'    => expHistory::getLast('editable'),
+//                'backlink'    => expHistory::getLast('editable'),
+                'backlink'    => makeLink(expHistory::getBack(1)),
                 "f"           => $f,
                 "record_id"   => $this->params['id'],
                 "title"       => !empty($this->config['report_name']) ? $this->config['report_name'] : gt('Viewing Record'),
@@ -250,6 +258,7 @@ class formsController extends expController {
 
             if (!empty($f)) {
                 $form = new form();
+                $form->id = $f->sef_url;
                 if (!empty($this->params['id'])) {
                     $fc = new forms_control();
                     $controls = $fc->find('all', 'forms_id=' . $f->id . ' AND is_readonly=0 AND is_static = 0','rank');
@@ -297,6 +306,7 @@ class formsController extends expController {
                     $emaillist = array_reverse($emaillist, true);
                     $form->register('email_dest', gt('Send Response to'), new radiogroupcontrol('', $emaillist));
                 }
+//                $paged = false;
                 foreach ($controls as $c) {
 //                    $ctl = unserialize($c->data);
                     $ctl = expUnserialize($c->data);
@@ -313,6 +323,7 @@ class formsController extends expController {
                         if (!empty($data[$c->name])) $ctl->default = $data[$c->name];
                     }
                     $form->register($c->name, $c->caption, $ctl);
+//                    if (get_class($ctl) == 'pagecontrol') $paged = true;
                 }
 
                 // if we are editing an existing record we'll need to do recaptcha here since we won't call confirm_data
@@ -351,7 +362,7 @@ class formsController extends expController {
                 }
                 if (empty($this->config['submitbtn'])) $this->config['submitbtn'] = gt('Submit');
                 if (empty($this->config['resetbtn'])) $this->config['resetbtn'] = '';
-                $form->register("submit", "", new buttongroupcontrol($this->config['submitbtn'], $this->config['resetbtn'], $cancel));
+                $form->register("submit", "", new buttongroupcontrol($this->config['submitbtn'], $this->config['resetbtn'], $cancel, 'finish'));
 
                 $form->meta("m", $this->loc->mod);
                 $form->meta("s", $this->loc->src);
@@ -376,6 +387,7 @@ class formsController extends expController {
                     "form_html"   => $form->toHTML($f->id),
                     "form"        => $f,
                     "count"       => $count,
+//                    'paged'       => $paged,
                 ));
             }
         } else {
@@ -407,14 +419,14 @@ class formsController extends expController {
             $num = $counts[$col->caption] > 1 ? $counts[$col->caption] : '';
 
             if (!empty($this->params[$col->name])) {
-                if ($coltype == 'checkboxcontrol') {
-                    $responses[$col->caption . $num] = 'Yes';
-                } else {
+//                if ($coltype == 'checkboxcontrol') {
+//                    $responses[$col->caption . $num] = gt('Yes');
+//                } else {
                     $responses[$col->caption . $num] = $value;
-                }
+//                }
             } else {
                 if ($coltype == 'checkboxcontrol') {
-                    $responses[$col->caption . $num] = 'No';
+                    $responses[$col->caption . $num] = gt('No');
                 } elseif ($coltype == 'datetimecontrol' || $coltype == 'calendarcontrol') {
                     $responses[$col->name] = $value;
                 } elseif ($coltype == 'uploadcontrol') {
@@ -422,15 +434,16 @@ class formsController extends expController {
         //            $value = call_user_func(array($coltype,'buildDownloadLink'),$this->params[$col->name],$_FILES[$col->name]['name'],true);
                     //eDebug($value);
                     $responses[$col->caption . $num] = $_FILES[$col->name]['name'];
-                } elseif ($coltype != 'htmlcontrol') {
+                } elseif ($coltype != 'htmlcontrol' && $coltype != 'pagecontrol') {
                     $responses[$col->caption . $num] = '';
                 }
             }
         }
 
         // remove some post data we don't want to pass thru to the form
-        unset($this->params['action']);
         unset($this->params['controller']);
+        unset($this->params['action']);
+        unset($this->params['view']);
         foreach ($this->params as $k => $v) {
         //    $this->params[$k]=htmlentities(htmlspecialchars($v,ENT_COMPAT,LANG_CHARSET));
             $this->params[$k] = htmlspecialchars($v, ENT_COMPAT, LANG_CHARSET);
@@ -587,11 +600,15 @@ class formsController extends expController {
                     $mail = new expMail();
                     if (!empty($attachments)) {
                         foreach ($attachments as $attachment) {
-                            $relpath = str_replace(PATH_RELATIVE, '', BASE);
+                            if (strlen(PATH_RELATIVE) != 1)
+                                $attachment = str_replace(PATH_RELATIVE, '', $attachment);  // strip relative path for links coming from templates
+                            if (file_exists(BASE . $attachment)) {
+//                                $relpath = str_replace(PATH_RELATIVE, '', BASE);
 //                            $finfo = finfo_open(FILEINFO_MIME_TYPE);
 //                            $ftype = finfo_file($finfo, $relpath . $attachment);
 //                            finfo_close($finfo);
-                            $mail->attach_file_on_disk($relpath.$attachment, expFile::getMimeType($relpath.$attachment));
+                                $mail->attach_file_on_disk(BASE . $attachment, expFile::getMimeType($attachment));
+                            }
                         }
                     }
                     $mail->quickSend(array(
@@ -749,11 +766,39 @@ class formsController extends expController {
             $f->is_saved = false;
             $f->table_name = null;
         }
+        $fieldlist = '[';
+        if (isset($f->id)) {
+            $fc = new forms_control();
+            foreach ($fc->find('all', 'forms_id=' . $f->id . ' AND is_readonly=0','rank') as $control) {
+//                $ctl = unserialize($control->data);
+                $ctl = expUnserialize($control->data);
+                $control_type = get_class($ctl);
+                $def = call_user_func(array($control_type, 'getFieldDefinition'));
+                if ($def != null) {
+                    $fields[$control->name] = $control->caption;
+                    if (in_array($control->name, $cols)) {
+                        $column_names[$control->name] = $control->caption;
+                    }
+                }
+                if ($control_type != 'pagecontrol' && $control_type != 'htmlcontrol') {
+                    $fieldlist .= '["{\$fields[\'' . $control->name . '\']}","' . $control->caption . '","' . gt('Insert') . ' ' . $control->caption . ' ' . gt('Field') . '"],';
+                }
+            }
+            $fields['ip'] = gt('IP Address');
+            if (in_array('ip', $cols)) $column_names['ip'] = gt('IP Address');
+            $fields['user_id'] = gt('Posted by');
+            if (in_array('user_id', $cols)) $column_names['user_id'] = gt('Posted by');
+            $fields['timestamp'] = gt('Timestamp');
+            if (in_array('timestamp', $cols)) $column_names['timestamp'] = gt('Timestamp');
+//            if (in_array('location_data', $cols)) $column_names['location_data'] = gt('Entry Point');
+        }
+        $fieldlist .= ']';
 
         assign_to_template(array(
             'column_names' => $column_names,
             'fields'       => $fields,
             'form'         => $f,
+            'fieldlist'    => $fieldlist,
         ));
     }
 
@@ -772,7 +817,8 @@ class formsController extends expController {
                 $control->update();
             }
         }
-        if (!empty($this->params['is_saved']) && empty($this->params['table_name'])) {
+//        if (!empty($this->params['is_saved']) && empty($this->params['table_name'])) {
+        if (!empty($this->params['is_saved'])) {
             // we are now saving data to the database and need to create it first
 //            $form = new forms($this->params['id']);
             $this->params['table_name'] = $this->forms->updateTable();
@@ -837,7 +883,7 @@ class formsController extends expController {
         $f = new forms($this->params['forms_id']);
         if ($f) {
             expCSS::pushToHead(array(
-                    "unique"  => "forms",
+//                    "unique"  => "forms",
                     "corecss" => "forms",
                 )
             );
@@ -891,8 +937,12 @@ class formsController extends expController {
                 $form->meta('forms_id', $f->id);
                 $types = expTemplate::listControlTypes();
                 $othertypes = expTemplate::listSimilarControlTypes($control_type);
-                $otherlist = new dropdowncontrol($control_type,$othertypes);
-                $form->registerBefore('identifier','control_type',gt('Control Type'),$otherlist);
+                if (count($othertypes) > 1) {
+                    $otherlist = new dropdowncontrol($control_type,$othertypes);
+                    $form->registerBefore('identifier','control_type',gt('Control Type'),$otherlist);
+                } else {
+                    $form->registerBefore('identifier','control_type',gt('Control Type'),new genericcontrol('hidden',$control_type));
+                }
                 assign_to_template(array(
                     'form_html' => $form->toHTML($f->id),
                     'type'      => $types[$control_type],
@@ -1012,6 +1062,7 @@ class formsController extends expController {
         if (!empty($this->config['column_names_list'])) {
             $cols = $this->config['column_names_list'];
         }
+        $fieldlist = '[';
         if (isset($this->config['forms_id'])) {
             $fc = new forms_control();
             foreach ($fc->find('all', 'forms_id=' . $this->config['forms_id'] . ' AND is_readonly=0','rank') as $control) {
@@ -1025,6 +1076,9 @@ class formsController extends expController {
                         $column_names[$control->name] = $control->caption;
                     }
                 }
+                if ($control_type != 'pagecontrol' && $control_type != 'htmlcontrol') {
+                    $fieldlist .= '["{\$fields[\'' . $control->name . '\']}","' . $control->caption . '","' . gt('Insert') . ' ' . $control->caption . ' ' . gt('Field') . '"],';
+                }
             }
             $fields['ip'] = gt('IP Address');
             if (in_array('ip', $cols)) $column_names['ip'] = gt('IP Address');
@@ -1034,6 +1088,7 @@ class formsController extends expController {
             if (in_array('timestamp', $cols)) $column_names['timestamp'] = gt('Timestamp');
 //            if (in_array('location_data', $cols)) $column_names['location_data'] = gt('Entry Point');
         }
+        $fieldlist .= ']';
         $title = gt('No Form Assigned Yet!');
         if (!empty($this->config['forms_id'])) {
             $form = $this->forms->find('first', 'id=' . $this->config['forms_id']);
@@ -1046,6 +1101,7 @@ class formsController extends expController {
             'form_title'   => $title,
             'column_names' => $column_names,
             'fields'       => $fields,
+            'fieldlist'    => $fieldlist,
         ));
 
         parent::configure();
@@ -1075,25 +1131,19 @@ class formsController extends expController {
         global $router;
 
         if (empty($router->params['action'])) return false;
-        $metainfo = array('title'=>'', 'keywords'=>'', 'description'=>'', 'canonical'=> '');
+        $metainfo = array('title'=>'', 'keywords'=>'', 'description'=>'', 'canonical'=> '', 'noindex' => '', 'nofollow' => '');
 
         // figure out what metadata to pass back based on the action we are in.
         switch ($router->params['action']) {
             case 'showall':
-                $metainfo = array(
-                    'title'       => gt("Showing all Form Records"),
-                    'keywords'    => SITE_KEYWORDS,
-                    'description' => SITE_DESCRIPTION,
-                    'canonical'   => ''
-                );
+                $metainfo['title'] = gt("Showing all Form Records");
+                $metainfo['keywords'] = SITE_KEYWORDS;
+                $metainfo['description'] = SITE_DESCRIPTION;
                 break;
             case 'show':
-                $metainfo = array(
-                    'title'       => gt("Showing Form Record"),
-                    'keywords'    => SITE_KEYWORDS,
-                    'description' => SITE_DESCRIPTION,
-                    'canonical'   => ''
-                );
+                $metainfo['title'] = gt("Showing Form Record");
+                $metainfo['keywords'] = SITE_KEYWORDS;
+                $metainfo['description'] = SITE_DESCRIPTION;
                 break;
             default:
                 $metainfo = parent::metainfo();
@@ -1141,7 +1191,7 @@ class formsController extends expController {
                 }
             }
 
-            foreach ($rpt_columns as $column_name) {
+            foreach ($rpt_columns as $column_name=>$column_caption) {
                 if ($column_name == "ip" || $column_name == "referrer" || $column_name == "location_data") {
                 } elseif ($column_name == "user_id") {
                     foreach ($items as $key => $item) {
@@ -1257,15 +1307,15 @@ class formsController extends expController {
      *
      * @return string
      */
-    public static function  sql2csv($items, $rptcols = null) {
+    public static function sql2csv($items, $rptcols = null) {
         $str = "";
         foreach ($rptcols as $individual_Header) {
-            if (!is_array($rptcols) || in_array($individual_Header, $rptcols)) $str .= $individual_Header . ",";
+            if (!is_array($rptcols) || in_array($individual_Header, $rptcols)) $str .= $individual_Header . ",";  //FIXME $individual_Header is ALWAYS in $rptcols?
         }
         $str .= "\r\n";
-        foreach ($items as $key => $item) {
+        foreach ($items as $item) {
             foreach ($rptcols as $key => $rowitem) {
-                if (!is_array($rptcols) || array_key_exists($key, $rptcols)) {
+                if (!is_array($rptcols) || property_exists($item, $key)) {
                     $rowitem = str_replace(",", " ", $item->$key);
                     $str .= $rowitem . ",";
                 }
@@ -1276,13 +1326,27 @@ class formsController extends expController {
         return $str;
     }
 
+    /**
+     * Export form, controls and optionally the data table
+     *
+     */
     public function export_eql() {
+        assign_to_template(array(
+            "id" => $this->params['id'],
+        ));
+    }
+
+    /**
+     * Export form, controls and optionally the data table
+     *
+     */
+    public function export_eql_process() {
         global $db;
 
         if (!empty($this->params['id'])) {
             $f = new forms($this->params['id']);
 
-            $filename = preg_replace('/[^A-Za-z0-9_.-]/','-',$f->table_name.'.eql');
+            $filename = preg_replace('/[^A-Za-z0-9_.-]/','-',$f->sef_url.'.eql');
 
             ob_end_clean();
             ob_start("ob_gzhandler");
@@ -1304,9 +1368,48 @@ class formsController extends expController {
                 header('Content-Disposition: attachment; filename="' . $filename . '"');
                 header('Pragma: no-cache');
             }
-            echo expFile::dumpDatabase($db,array('forms_'.$f->table_name));
+            $tables = array(
+                'forms',
+                'forms_control'
+            );
+            if (!empty($this->params['include_data'])) {
+                $tables[] = 'forms_'.$f->table_name;
+            }
+            echo expFile::dumpDatabase($db,$tables,'Form',$this->params['id']);
             exit; // Exit, since we are exporting
         }
+//        expHistory::back();
+    }
+
+    /**
+     * Import form, controls and optionally the data table
+     *
+     */
+    public function import_eql() {
+    }
+
+    /**
+     * Import form, controls and optionally the data table
+     *
+     */
+    public function import_eql_process() {
+        global $db;
+
+        $errors = array();
+
+        //FIXME check for duplicate form data table name before import?
+        expFile::restoreDatabase($db,$_FILES['file']['tmp_name'],$errors,'Form');
+
+        if (empty($errors)) {
+            flash('message',gt('Form was successfully imported'));
+        } else {
+            $message = gt('Form import encountered the following errors') . ':<br>';
+            foreach ($errors as $error) {
+                $message .= '* ' . $error . '<br>';
+            }
+            flash('error', $message);
+        }
+        expHistory::back();
     }
 
     public function import_csv() {
@@ -1315,11 +1418,6 @@ class formsController extends expController {
                 "error" => "The /tmp directory is not writable.  Please contact your administrator.",
             ));
         } else {
-            //Setup the meta data (hidden values)
-            $form = new form();
-            $form->meta("controller", "forms");
-            $form->meta("action", "import_csv_mapper");
-
             //Setup the arrays with the name/value pairs for the dropdown menus
             $delimiterArray = Array(
                 ',' => gt('Comma'),
@@ -1337,16 +1435,23 @@ class formsController extends expController {
                 }
             }
 
-            //Register the dropdown menus
-            $form->register("delimiter", gt('Delimiter Character'), new dropdowncontrol(",", $delimiterArray));
-            $form->register("upload", gt('CSV File to Upload'), new uploadcontrol());
-            $form->register("use_header", gt('First Row is a Header'), new checkboxcontrol(0, 0));
-            $form->register("rowstart", gt('Forms Data begins in Row'), new textcontrol("1", 1, 0, 6));
-            $form->register("forms_id", gt('Target Form'), new dropdowncontrol("0", $formslist));
-            $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
+//            //Setup the meta data (hidden values)
+//            $form = new form();
+//            $form->meta("controller", "forms");
+//            $form->meta("action", "import_csv_mapper");
+//
+//            //Register the dropdown menus
+//            $form->register("delimiter", gt('Delimiter Character'), new dropdowncontrol(",", $delimiterArray));
+//            $form->register("upload", gt('CSV File to Upload'), new uploadcontrol());
+//            $form->register("use_header", gt('First Row is a Header'), new checkboxcontrol(0, 0));
+//            $form->register("rowstart", gt('Forms Data begins in Row'), new textcontrol("1", 1, 0, 6));
+//            $form->register("forms_id", gt('Target Form'), new dropdowncontrol("0", $formslist));
+//            $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
 
             assign_to_template(array(
-                "form_html" => $form->tohtml(),
+//                "form_html" => $form->tohtml(),
+                'delimiters' => $delimiterArray,
+                'forms_list' => $formslist,
             ));
         }
     }
@@ -1410,8 +1515,8 @@ class formsController extends expController {
                 if ($x == 0 && !empty($this->params["use_header"])) $headerinfo = $lineInfo;
             }
 
-            // get list of simple controls if we are also creating a new form
-            $types = expTemplate::listControlTypes();
+            // get list of simple non-static controls if we are also creating a new form
+            $types = expTemplate::listControlTypes(false);
             uasort($types, "strnatcmp");
             $types = array_merge(array('none'=>gt('--Disregard this column--')),$types);
 
@@ -1471,7 +1576,7 @@ class formsController extends expController {
                 $formcontrols[$key] = new stdClass();
                 $formcontrols[$key]->control = $control;
                 $label = str_replace('&', 'and', $this->params['name'][$key]);
-                $label = preg_replace("/(-)$/", "", preg_replace('/(-){2,}/', '-', strtolower(preg_replace("/([^0-9a-z-_\+])/i", '-', $label))));
+                $label = preg_replace("/(-)$/", "", preg_replace('/(-){2,}/', '_', strtolower(preg_replace("/([^0-9a-z-_\+])/i", '_', $label))));
                 $formcontrols[$key]->name = $label;
                 $formcontrols[$key]->caption = $this->params['name'][$key];
                 $formcontrols[$key]->data = $this->params['data'][$key];
@@ -1512,9 +1617,9 @@ class formsController extends expController {
             if ($control == 'datetimecontrol') {
                 $params['showdate'] = $params['showtime'] = true;
             }
-            if ($control == 'htmlcontrol') {
-                $params['html'] = $this->params['data'][$key];
-            }
+//            if ($control == 'htmlcontrol') {
+//                $params['html'] = $this->params['data'][$key];
+//            }
             if ($control == 'radiogroupcontrol' || $control == 'dropdowncontrol') {
                 $params['default'] = $params['items'] = $this->params['data'][$key];
             }
@@ -1533,7 +1638,7 @@ class formsController extends expController {
     }
 
     public function import_csv_data_mapper() {
-        global $template;
+//        global $template;
         //Get the temp directory to put the uploaded file
         $directory = "tmp";
 
@@ -1627,7 +1732,7 @@ class formsController extends expController {
         $records = array();
         $linenum = 1;
 
-                // pull in the form control definitions here
+        // pull in the form control definitions here
         $f = new forms($this->params['forms_id']);
         $fields = array();
         foreach ($f->forms_control as $control) {
@@ -1637,7 +1742,6 @@ class formsController extends expController {
         while (($filedata = fgetcsv($file, 2000, $this->params["delimiter"])) != false) {
             if ($linenum >= $this->params["rowstart"]) {
                 $i = 0;
-
                 foreach ($filedata as $field) {
                     if (!empty($this->params["column"][$i]) && $this->params["column"][$i] != "none") {
                         $colname = $this->params["column"][$i];
@@ -1648,7 +1752,6 @@ class formsController extends expController {
                     }
                     $i++;
                 }
-
                 $record['linenum'] = $linenum;
                 $records[] = $record;
             }
@@ -1670,14 +1773,22 @@ class formsController extends expController {
         $f->updateTable();
 
         $fields = array();
+        $multi_item_control_items = array();
+        $multi_item_control_ids = array();
         foreach ($f->forms_control as $control) {
             $fields[$control->name] = expUnserialize($control->data);
+            $ctltype = get_class($fields[$control->name]);
+            if (in_array($ctltype,array('radiogroupcontrol','dropdowncontrol'))) {
+                if (!array_key_exists($control->id,$multi_item_control_items)) {
+                    $multi_item_control_items[$control->name] = null;
+                    $multi_item_control_ids[$control->name] = $control->id;
+                }
+            }
         }
 
         while (($filedata = fgetcsv($file, 2000, $this->params["delimiter"])) != false) {
             if ($linenum >= $this->params["rowstart"] && in_array($linenum,$this->params['importrecord'])) {
                 $i = 0;
-
                 $db_data = new stdClass();
                 $db_data->ip = '';
                 $db_data->user_id = $user->id;
@@ -1693,6 +1804,9 @@ class formsController extends expController {
                         if (!empty($def)) {
                             $db_data->$colname = call_user_func(array($control_type, 'convertData'), $colname, $params);
                         }
+                        if (!empty($db_data->$colname) && array_key_exists($colname,$multi_item_control_items) && !in_array($db_data->$colname,$multi_item_control_items[$colname])) {
+                            $multi_item_control_items[$colname][] = $db_data->$colname;
+                        }
                     }
                     $i++;
                 }
@@ -1700,6 +1814,16 @@ class formsController extends expController {
                 $recordsdone++;
             }
             $linenum++;
+        }
+        // update multi-item forms controls
+        if (!empty($multi_item_control_ids)) {
+            foreach ($multi_item_control_ids as $key=>$control_id) {
+                $fc = new forms_control($control_id);
+                $ctl = expUnserialize($fc->data);
+                $ctl->items = $multi_item_control_items[$key];
+                $fc->data = serialize($ctl);
+                $fc->update();
+            }
         }
         unlink(BASE . $this->params["filename"]);
         flash('notice', $recordsdone.' '.gt('Records Imported'));

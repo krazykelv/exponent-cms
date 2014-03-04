@@ -52,9 +52,9 @@
                 <div id="tab2">
                     <h2>{'Event Date/Time'|gettext}</h2>
 					{control type="yuicalendarcontrol" name="eventdate" label="Start Date of Event"|gettext value=$record->eventdate}
-					{control type="yuicalendarcontrol" name="eventenddate" label="End Date of Event"|gettext value=$record->eventenddate description='Only used for display purposes'|gettext}
                     {control type="datetimecontrol" name="event_starttime" label="Start Time"|gettext value=$record->event_starttime+$record->eventdate showdate=false}
                     {control type="datetimecontrol" name="event_endtime" label="End Time"|gettext value=$record->event_endtime+$record->eventdate showdate=false}
+					{control type="yuicalendarcontrol" name="eventenddate" label="End Date of Event"|gettext value=$record->eventenddate description='Only used for display purposes'|gettext}
                     <h2>{'Signup Cutoff'|gettext}</h2>
 					{control type="yuicalendarcontrol" name="signup_cutoff" label="Registrations is closed after"|gettext value=$record->signup_cutoff showtime = true}
                 </div>
@@ -152,19 +152,21 @@
                       {control type="radiogroup" name="multi_registrant" label="Simultaneous Registration"|gettext items="Single Registration,Multiple Registration"|gettxtlist values="0,1" default=$record->multi_registrant|default:0 description='Should we allow multiple similar (same basic cost) registrations at one time?'|gettext}
                   </div>
                 <div id="tab6">
-                    {control type=files name=mainimages label="Main Images"|gettext subtype="mainimage" value=$record->expFile description="Images to show for your event"|gettext}
+                    {control type=files name=mainimages label="Main Images"|gettext subtype="mainimage" accept="image/*" value=$record->expFile description="Images to show for your event"|gettext}
                     <div class="additional-images">
-                        {control type=files name=images label="Additional Images"|gettext subtype="images" value=$record->expFile description="Additional images to show for your event"|gettext}
+                        {control type=files name=images label="Additional Images"|gettext subtype="images" accept="image/*" value=$record->expFile description="Additional images to show for your event"|gettext}
                     </div>
 					{control type=files name=brochures label="Additional File Attachments"|gettext subtype="brochures" value=$record->expFile description="Attach Product Brochures, Docs, Manuals, etc."|gettext}
                 </div>
                 <div id="tab7">
                     <h2>{'SEO Settings'|gettext}</h2>
-                    {control type="text" name="sef_url" label="SEF URL"|gettext value=$record->sef_url}
-                    {control type="text" name="canonical" label="Canonical URL"|gettext value=$record->canonical}
-                    {control type="text" name="meta_title" label="Meta Title"|gettext value=$record->meta_title}
-                    {control type="textarea" name="meta_description" label="Meta Description"|gettext value=$record->meta_description}
-                    {control type="textarea" name="meta_keywords" label="Meta Keywords"|gettext value=$record->meta_keywords}
+                    {control type="text" name="sef_url" label="SEF URL"|gettext value=$record->sef_url description='If you don\'t put in an SEF URL one will be generated based on the title provided. SEF URLs can only contain alpha-numeric characters, hyphens, forward slashes, and underscores.'|gettext}
+                    {control type="text" name="canonical" label="Canonical URL"|gettext value=$record->canonical description='Helps get rid of duplicate search engine entries'|gettext}
+                    {control type="text" name="meta_title" label="Meta Title"|gettext value=$record->meta_title description='Override the item title for search engine entries'|gettext}
+                    {control type="textarea" name="meta_description" label="Meta Description"|gettext value=$record->meta_description description='Override the item summary for search engine entries'|gettext}
+                    {control type="textarea" name="meta_keywords" label="Meta Keywords"|gettext value=$record->meta_keywords description='Comma separated phrases - overrides site keywords and item tags'|gettext}
+                    {control type="checkbox" name="meta_noindex" label="Do Not Index"|gettext|cat:"?" checked=$section->meta_noindex value=1 description='Should this page be indexed by search engines?'|gettext}
+                    {control type="checkbox" name="meta_nofollow" label="Do Not Follow Links"|gettext|cat:"?" checked=$section->meta_nofollow value=1 description='Should links on this page be indexed and followed by search engines?'|gettext}
                 </div>
 
 				<div id="tab8">

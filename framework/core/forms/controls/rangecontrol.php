@@ -36,7 +36,7 @@ class rangecontrol extends textcontrol {
 
     function controlToHTML($name, $label) {
         $this->size = !empty($this->size) ? $this->size : 25;
-        $inputID  = (!empty($this->id)) ? ' id="'.$this->id.'"' : "";
+        $inputID  = (!empty($this->id)) ? ' id="'.$this->id.'"' : ' id="'.$name.'"';
         if ($this->type != 'text') {
             $extra_class = ' ' . $this->type;
         } else {
@@ -70,9 +70,9 @@ class rangecontrol extends textcontrol {
 
     static function form($object) {
         $form = parent::form($object);
-        $form->registerBefore("required",'min',gt('Minimum'), new textcontrol((($object->min==0)?"":$object->min),4,false,5));
-        $form->registerBefore("required",'max',gt('Maximum'), new textcontrol((($object->max==0)?"":$object->max),4,false,5));
-        $form->registerBefore("required",'step',gt('Step'), new textcontrol((($object->step==0)?"1":$object->step),4,false,5));
+        $form->registerBefore("required",'min',gt('Minimum'), new textcontrol((empty($object->min)?"":$object->min),4,false,5));
+        $form->registerBefore("required",'max',gt('Maximum'), new textcontrol((empty($object->max)?"":$object->max),4,false,5));
+        $form->registerBefore("required",'step',gt('Step'), new textcontrol((empty($object->step)?"1":$object->step),4,false,5));
         return $form;
     }
 

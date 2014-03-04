@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 {control type=text name='title' label='Form Name'|gettext value=$form->title required=true}
-                {control type="text" name="sef_url" label="SEF URL"|gettext value=$form->sef_url}
+                {control type="text" name="sef_url" label="SEF URL"|gettext value=$form->sef_url description='If you don\'t put in an SEF URL one will be generated based on the title provided. SEF URLs can only contain alpha-numeric characters, hyphens, forward slashes, and underscores.'|gettext}
                 {control type=html name='description' label='Form Description'|gettext value=$form->description description='Placed below module description and above the form'|gettext}
                 {control type=html name='response' label='Submission Response Display'|gettext value=$form->response description='Message to display on the site after submitting a form'|gettext}
                 {group label='Form Database Settings'|gettext}
@@ -73,12 +73,13 @@
                     </div>
                     {control type=text name='report_name' label='Report Title'|gettext value=$form->report_name}
                     {control type=html name='report_desc' label='Report Description'|gettext value=$form->report_desc}
-                    {group label='Multi-Record View Configuration'|gettext}
+                    {group label='Multi-Record Tabular View Configuration'|gettext}
                         {control type="listbuilder" name="column_names_list" label="Columns for View Data/Export CSV" values=$column_names source=$fields description='Selecting NO columns is equal to selecting first five columns'|gettext}
                     {/group}
-                    {group label='Single-Record View Configuration'|gettext}
-                        {*{control type=html name='report_def' label='Custom E-Mail Report and View Record Definition'|gettext value=$form->report_def description='Leave this custom definition blank to use the default \'all fields\' e-mail report and record view'|gettext}*}
-                        {control type=textarea name='report_def' label='Custom E-Mail and View Record Template'|gettext value=$config.report_def rows=10 cols=60 description="Leave blank to display all fields.  Record fields are referenced within curly braces by"|gettext|cat:' $fields[\'fieldname\']'}
+                    {group label='Custom View Configuration'|gettext}
+                    {control type=editor name='report_def' label='Custom E-Mail, Single and Portfolio View Template'|gettext value=$config.report_def rows=10 cols=60
+                        plugin="fieldinsert" additionalConfig="fieldinsert_list : `$fieldlist`,"
+                        description='Leave blank to display all fields.  Use \'Fields\' dropdown to insert fields'}
                     {/group}
                 </div>
             </div>

@@ -80,7 +80,15 @@ if (!function_exists('smarty_function_icon')) {
             $params['alt'] = gt($params['alt']);
         }
         if (!empty($params['text'])) {
-            $params['text'] = gt($params['text']);
+            if ($params['text'] == "notext") {
+                $params['text'] = '';
+                if (empty($params['img']) && !empty($params['action'])) {
+                    $params['img'] = $params['action'] . '.png';
+                }
+                if (empty($params['title'])) {
+                    $params['title'] = (empty($text) ? gt(ucfirst($params['action'])) . ' ' . gt('this') . ' ' . $smarty->getTemplateVars('modelname') . ' ' . gt('item') : $text);
+                }
+            } else $params['text'] = gt($params['text']);
         }
         if (!empty($params['title'])) {
             $params['title'] = gt($params['title']);
@@ -96,7 +104,7 @@ if (!function_exists('smarty_function_icon')) {
             unset($params['hash']);
         }
 
-        if (empty($params['img']) && empty($params['text'])) {
+        if  (empty($params['img']) && empty($params['text'])) {
             $img = gt(ucfirst($class));
         } else if (!empty($params['img'])) {
             $imgtmp = explode('.',$params['img']);
@@ -104,10 +112,12 @@ if (!function_exists('smarty_function_icon')) {
             $img = '';
 //	    $img 	= '<img class="'.$class.' btn" src="'.ICON_RELATIVE.$params['img'].'" title="'.$title.'" alt="'.$alt.'"'.XHTML_CLOSING.'>';
 //            $img = '<img class="' . $class . ' " src="' . ICON_RELATIVE . $params['img'] . '" title="' . $title . '" alt="' . $alt . '"' . XHTML_CLOSING . '>';
-        } else $img = '';
+        } else {
+            $img = '';
+        }
 
         $linktext = $img . $text;
-
+        
         if (BTN_SIZE == 'large') {
             $btn_size = 'btn-small';
             $icon_size = 'icon-large';
@@ -197,12 +207,17 @@ if (!function_exists('smarty_function_icon')) {
         $onclick = !empty($params['onclick']) ? $params['onclick'] : '';
         unset($params['onclick']);
         //eDebug($params);
-        if (!empty($params['action'])) {
+        if (!empty($params['name'])) {
+            $name = ' id="'.$params['name'].'"';
+        } else {
+            $name = '';
+        }
+        if (!empty($params['action']) && $params['action'] != 'scriptaction') {
             if ($params['action'] == 'copy') {
                 $params['copy'] = true;
                 $params['action'] = 'edit';
             }
-            echo '<a href="' . expCore::makeLink($params) . '" title="' . $title . '" class=" btn '.$btn_type.' '.$btn_size.'"';
+            echo '<a'.$name.' href="' . expCore::makeLink($params) . '" title="' . $title . '" class=" btn '.$btn_type.' '.$btn_size.'"';
             if (($params['action'] == "delete" || $params['action'] == "merge" || $class == "delete" || $class == "merge") && empty($onclick))
                 echo ' onclick="return confirm(\'' . gt('Are you sure you want to') . ' ' . $params['action'] . ' ' . gt('this') . ' ' . $smarty->getTemplateVars('modelname') . ' ' . gt('item') . '?\');"';
 //            if ($params['action'] == "merge" && empty($onclick))
@@ -210,6 +225,11 @@ if (!function_exists('smarty_function_icon')) {
             if (!empty($onclick))
                 echo ' onclick="' . $onclick . '"';
             echo '><i class="icon-'.$class.' '.$icon_size.'"></i> ' . $linktext . '</a>';
+        } elseif(!empty($params['action']) && $params['action'] == 'scriptaction') {
+           echo '<a'.$name.' href="#" title="' . $title . '" class=" btn '.$btn_type.' '.$btn_size.'"';
+           if (!empty($onclick))
+               echo ' onclick="' . $onclick . '"';
+           echo '><i class="icon-'.$class.' '.$icon_size.'"></i> ' . $linktext . '</a>';
         } else {
             echo '<div class=" btn disabled '.$btn_type.' '.$btn_size.'"><i class="icon-'.$class.' '.$icon_size.'"></i> ' .$linktext.'</div>';
         }

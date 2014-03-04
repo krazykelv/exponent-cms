@@ -6,6 +6,86 @@ Copyright (c) 2004-2013 OIC Group, Inc.
 
 For a more detailed changelog visit https://github.com/exponentcms/exponent-cms/commits/master
 
+Added / Fixed / changed for 2.2.3
+-----------------------
+### Address issues in v2.2.2 and finally remove features deprecated in v2.2.0
+  * changes use/function of the 'create' permission
+    -- 'create' permission is NO longer automatically tied to an 'edit' permission
+    -- a user with the 'create' permission may also edit and delete items which they have created
+    -- an 'edit' permission is required to edit other users' items and likewise for delete
+    -- an 'edit' permission by itself will NOT allow creation of new items
+  - adds user group 'global' permissions/restrictions to: prevent file uploading, prevent user profile changes, hide individual exponent/slingbar menus, or the entire slingbar
+    -- restrictions apply to all non-admin users assigned to that user group
+  - now enforces non-public page and hidden module restrictions to content on/in those pages/modules to prevent access by search engines, etc...
+  - adds 'noindex' and 'nofollow' SEO meta tag options to pages/items to prevent addition to search engines
+  * revises navigation flyout sidebar view to display module title vertically and allow more than one navigation flyout sidebar on a page
+    ** NOTE, any previous use of the navigation flyout sidebar contents will be invisible since we move away from a single hard-coded source reference!
+  - adds forms showall view data filtering to module configuration settings
+  - adds 'Page' summary type to showall views to allow an editor inserted 'page break' to determine content displayed in list view
+  - adds force image auto-resize and folder on quick-upload/add
+  - adds new 'dim controls' to slideshow views to only display slide controls when the cursor is over the slide
+  - adds copy portfolio item command
+  - adds new login 'show Login only' view
+  - adds slideshow transition options (some combinations do NOT work together)
+  - adds new optional universal PDF generation via mPDF, PDF generator engine now selectible in site configuration
+  - changes calendar ajax pagination to become optional (default is off)
+  - better theme support for mobile devices with theme configurable 'meta viewport' and optional apple-touch-icon implementation
+  - 0.9x theme support is removed
+  - Flowplayer & YouTube modules are removed
+  - includes all fixes from v2.2.2 patches
+### Known Issues
+  - eCommerce gift card & purchase order functionality have not been tested/may not be complete
+  - Item re-ranking (ddrerank) doesn't account for aggregation
+  - LDAP support may not work in all LDAP server scenarios due to limited testing
+
+Added / Fixed / changed for 2.2.2
+-----------------------
+### Address issues in v2.2.1, enhance SEO and Social Media features
+  - greatly enhances default page meta data (SEO out of the box)
+    -- changes 'show item' page meta description to fallback to item summary for better display by Facebook when sharing links
+    -- uses item tags in 'show' view for keywords when no meta keywords available instead of defaulting to site keywords
+  - adds more social media features
+    -- new optional facebook like & tweet button to news posts
+    -- new optional auto facebook post/tweet to blog posts, news items, file downloads, & events
+  - adds showall news by date method
+  - adds a new 'toggle' view to faq display
+  - adds 'word match only' setting for search results
+  - enhances eCommerce with many fixes and new features to products and event registrations
+  - better user feedback for max file upload size and resulting errors
+  - adds nested help documents
+### Known Issues
+  - 0.9x theme support is deprecated but still present in this distribution, it will be removed in the near future
+  - Flowplayer & YouTube modules are deprecated but still present in this distribution, they will be removed in the near future
+    -- There is no media player migration script, but you can migrate to flowplayer/youtube modules, then run the media player upgrade script
+  - eCommerce gift card & purchase order functionality have not been tested/may not be complete
+  - Item re-ranking (ddrerank) doesn't account for aggregation
+  - LDAP support may not work in all LDAP server scenarios due to limited testing
+
+Added / Fixed / changed for 2.2.1
+-----------------------
+### Address any issues in v2.2.0 and streamline integration of Twitter-Bootstrap/jQuery
+  - new facebook module to display like buttons, like boxes, and optional like button to blog articles & file downloads
+  - adds optional tweet button to blog articles & file downloads, and optional twitter follow button to twitter view
+  - adds paged form (wizard) feature
+  - adds form design export/import
+  - adds form report designer insert field command to editor
+  - Message of the Day module now accepts WYSIWYG text and offers an 'every month' on this date option
+  - adds a rudimentary site configuration profile (backup/restore) feature
+  - adds optional author signature to blog posts, handled by user profile extension
+  - now supports multiple simultaneous file uploads for 'quick add' uploads w/ new progress indicator (if browser supports)
+  - recycle bin is now more consistent...all removed modules sent to recycle bin, all modules removed from recycle bin have all items deleted
+  - adds 'hide module title' setting to the add/create module view
+  - adds ldap user sync to update all ldap users against ldap server data (email, first/last name)
+  - no longer automatically loads bootstrap.min.js file, explicit loading of individual scripts as required
+  - includes all fixes from v2.2.0 patches
+### Known Issues
+  - 0.9x theme support is deprecated but still present in this distribution, it will be removed in the near future
+  - Flowplayer & YouTube modules are deprecated but still present in this distribution, they will be removed in the near future
+    -- There is no media player migration script, but you can migrate to flowplayer/youtube modules, then run the media player upgrade script
+  - eCommerce gift card & purchase order functionality have not been tested/may not be complete
+  - Item re-ranking (ddrerank) doesn't account for aggregation
+  - LDAP support may not work in all LDAP server scenarios due to limited testing
+
 Added / Fixed / changed for 2.2.0
 -----------------------
 ### The first 'pure 2.0' version of Exponent w/o any 1.0 modules, etc..., primarily implements Container 2.0 and integrates Twitter-Bootstrap/jQuery

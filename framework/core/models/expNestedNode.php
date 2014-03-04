@@ -35,12 +35,12 @@ abstract class expNestedNode extends expRecord {
     *
     */
 	public $nodes = array();
-    protected $attachable_item_types = array(
-        //'content_expFiles'=>'expFile', 
-        //'content_expTags'=>'expTag', 
-        //'content_expComments'=>'expComment',
-        //'content_expSimpleNote'=>'expSimpleNote',
-    );
+//    protected $attachable_item_types = array(
+//        //'content_expFiles'=>'expFile',
+//        //'content_expTags'=>'expTag',
+//        //'content_expComments'=>'expComment',
+//        //'content_expSimpleNote'=>'expSimpleNote',
+//    );
     
 	public function __construct($params=null, $get_assoc = false, $get_attached = false) {
 		parent::__construct($params, $get_assoc, $get_attached);
@@ -275,6 +275,13 @@ abstract class expNestedNode extends expRecord {
 		}
 		return $tree;
 	}
+
+    public static function getTree($model_table) {
+        global $db;
+
+        return $db->selectNestedTree($model_table);
+    }
+
 }
 
 ?>

@@ -19,7 +19,7 @@
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$prev_timestamp3}" rel="{$prev_timestamp3}" title="{$prev_timestamp3|format_date:"%B %Y"}">{$prev_timestamp3|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$prev_timestamp2}" rel="{$prev_timestamp2}" title="{$prev_timestamp2|format_date:"%B %Y"}">{$prev_timestamp2|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$prev_timestamp}" rel="{$prev_timestamp}" title="{$prev_timestamp|format_date:"%B %Y"}">{$prev_timestamp|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;&#160;&#160;&#160;&#160;
-        <strong>{$time|format_date:"%B %Y"}</strong>&#160;&#160;&#160;&#160;&#160;&#160;&raquo;&#160;&#160;
+        <strong>{$time|format_date:"%B %Y"}</strong>&#160;&#160;{printer_friendly_link view='showall_Monthly+List' text=''|gettext}{export_pdf_link view='showall_Monthly+List' text=''|gettext}&#160;&#160;&#160;&#160;&raquo;&#160;&#160;
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$next_timestamp}" rel="{$next_timestamp}" title="{$next_timestamp|format_date:"%B %Y"}">{$next_timestamp|format_date:"%b"}</a>&#160;&#160;&raquo;&#160;
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$next_timestamp2}" rel="{$next_timestamp2}" title="{$next_timestamp2|format_date:"%B %Y"}">{$next_timestamp2|format_date:"%b"}</a>&#160;&#160;&raquo;&#160;
 		<a class="nav module-actions" href="{link action=showall view='showall_Monthly List' time=$next_timestamp3}" rel="{$next_timestamp3}" title="{$next_timestamp3|format_date:"%B %Y"}">{$next_timestamp3|format_date:"%b"}</a>&#160;&#160;&raquo;
@@ -47,9 +47,9 @@
 							{permissions}
                                 {if substr($item->location_data,0,3) == 'O:8'}
                                     <div class="item-actions">
-                                        {if $permissions.edit == 1}
+                                        {if $permissions.edit || ($permissions.create && $item->poster == $user->id)}
                                             {if $myloc != $item->location_data}
-                                                {if $permissions.manage == 1}
+                                                {if $permissions.manage}
                                                     {icon action=merge id=$item->id title="Merge Aggregated Content"|gettext}
                                                 {else}
                                                     {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -58,7 +58,7 @@
                                             {icon action=edit record=$item date_id=$item->date_id title="Edit this Event"|gettext}
                                             {icon action=copy record=$item date_id=$item->date_id title="Copy this Event"|gettext}
                                         {/if}
-                                        {if $permissions.delete == 1}
+                                        {if $permissions.delete || ($permissions.create && $item->poster == $user->id)}
                                             {if $item->is_recurring == 0}
                                                 {icon action=delete record=$item date_id=$item->date_id title="Delete this Event"|gettext}
                                             {else}
@@ -77,7 +77,8 @@
 									{/if}
 								{/if}
 								{br}
-                                {$item->body|summarize:"html":"paralinks"}
+                                {*{$item->body|summarize:"html":"paralinks"}*}
+                                {$item->body|summarize:"html":"parahtml"}
 							</div>
 						</div>
 					{/foreach}

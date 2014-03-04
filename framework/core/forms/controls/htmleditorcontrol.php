@@ -20,7 +20,7 @@
 if (!defined('EXPONENT')) exit('');
 
 /**
- * HTML Editor Control
+ * HTML Editor Control - displays wysiwyg editor widget
  *
  * @package Subsystems-Forms
  * @subpackage Control
@@ -28,6 +28,10 @@ if (!defined('EXPONENT')) exit('');
 if (SITE_WYSIWYG_EDITOR == "ckeditor") {
 
 class htmleditorcontrol extends ckeditorcontrol {
+}
+
+} elseif (SITE_WYSIWYG_EDITOR == "tinymce") {
+class htmleditorcontrol extends tinymcecontrol {
 }
 
 } else {
@@ -47,7 +51,6 @@ class htmleditorcontrol extends formcontrol {
 	}
 
 	function controlToHTML($name,$label) {
-
 			global $db;
 			
 			if($this->toolbar == "") {

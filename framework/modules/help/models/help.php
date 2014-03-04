@@ -75,7 +75,7 @@ class help extends expRecord {
      *
      */
     public function beforeSave() {
-        global $db;
+//        global $db;
 
         $this->grouping_sql = " AND help_version_id='".$this->help_version_id."'";
 //		if (isset($this->params['help_section'])) {
@@ -270,6 +270,14 @@ class help extends expRecord {
         
         return $link;
     }
+
+    public static function getHelpParents($version_id) {
+        global $db;
+
+        return $db->selectColumn('help', 'parent', 'help_version_id="'.$version_id.'" AND parent!=0',null,true);
+    }
+
+
 }
 
 ?>

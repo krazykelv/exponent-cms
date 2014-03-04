@@ -23,7 +23,11 @@
 
 class eventregistration extends expRecord {
     public $table = 'product';
-    public $has_one = array();
+    public $default_sort_field = 'rank';
+    public $rank_by_field = 'rank';
+    public $default_sort_direction = "asc";
+
+//    public $has_one = array();
     public $has_and_belongs_to_many = array('storeCategory');
     public $has_many = array('optiongroup');
     public $get_assoc_for = array('optiongroup');
@@ -33,10 +37,6 @@ class eventregistration extends expRecord {
     public $requiresShipping = false;
     public $requiresBilling = true; //FIXME only if a cost is involved
     public $isQuantityAdjustable = false;
-
-    public $default_sort_field = 'rank';
-    public $rank_by_field = 'rank';
-    public $default_sort_direction = "asc";
 
     public $early_discount_amount_modifiers = array('$' => '$', '%' => '%');
 
@@ -92,9 +92,13 @@ class eventregistration extends expRecord {
             $event->eventenddate = $enddate;
             $event->event_starttime = datetimecontrol::parseData('event_starttime', $params);
             $event->event_endtime = datetimecontrol::parseData('event_endtime', $params);
-            $event->signup_cutoff = strtotime($params['signup_cutoff']);
+            $cutoffdate = strtotime($params['signup_cutoff']);
+            if ($cutoffdate == 0 || $cutoffdate > $event->eventenddate) $cutoffdate = $event->eventenddate;
+            $event->signup_cutoff = $cutoffdate;
 
             $event->forms_id = $params['forms_id'];
+            $f = new forms($params['forms_id']);
+            $f->updateTable();  // update/create the form data table
             $event->multi_registrant = $params['multi_registrant'];
 
             $event->location = $params['location'];
@@ -214,7 +218,7 @@ class eventregistration extends expRecord {
     public function optionDropdown($key, $display_price_as) {
         $items = array();
 
-        foreach ($this->optiongroup as $index => $group) {
+        foreach ($this->optiongroup as $group) {
             if ($group->title == $key) {
                 foreach ($group->option as $option) {
                     if ($option->enable == true) {
@@ -240,7 +244,6 @@ class eventregistration extends expRecord {
                                 }
                             }
                         }
-
                         $items[$option->id] = $text . $price;
                     }
                 }
@@ -250,7 +253,7 @@ class eventregistration extends expRecord {
     }
 
     public function spacesLeft() {
-        global $db;
+//        global $db;
 
 //        return $this->quantity - $this->number_of_registrants;
 //        $f = new forms($this->forms_id);
@@ -274,7 +277,8 @@ class eventregistration extends expRecord {
         $view->assign('registrants', $registrants);
 
         //assign the number registered to the view
-        $number = count($registrants);
+//        $number = count($registrants);
+        $number = $item->quantity;
         $view->assign('number', $number);
 
         return $view->render();
@@ -343,6 +347,7 @@ class eventregistration extends expRecord {
 //            }
 //        } else {
         $f = new forms($this->forms_id);
+        $f->updateTable();  // update/create the form data table
         $registrants = array();
         if (!empty($params['registrant']) && !empty($f->is_saved)) {  // is there user input data
             // first invert the key sequence by registrant index instead of by field name
@@ -471,7 +476,7 @@ class eventregistration extends expRecord {
             if (empty($params['qtyr'])) {
                 $params['qtyr'] = 1;
             }
-            if (!empty($params['base_price'])) $item->products_price = preg_replace("/[^0-9.]/", "", $params['base_price']);
+            if (!empty($params['base_price'])) $item->products_price = expUtil::currency_to_float($params['base_price']);
             else $item->products_price = $product->base_price;
             $item->quantity = $params['qtyr'];
         }
@@ -594,7 +599,7 @@ class eventregistration extends expRecord {
         $f = new forms($this->forms_id);
         if (empty($f->is_saved)) return null;  // useless unless the form data is being saved
         $fc = new forms_control();
-        $controls = $fc->find('all','forms_id='.$this->forms_id);
+        $controls = $fc->find('all','forms_id='.$this->forms_id,'rank');
         foreach ($controls as $key=>$control) {
             $controls[$key]->ctl = expUnserialize($control->data);
             if ($input_only && get_class($control->ctl) == 'htmlcontrol') {
@@ -692,67 +697,67 @@ class eventregistration extends expRecord {
         $registered = array();
         if (!empty($this->forms_id)) {
             $f = new forms($this->forms_id);
-            // get list of all orders for this event
-            $order_ids_complete = array();
+        }
+        // get list of all orders for this event
+        $order_ids_complete = array();
+        if (!empty($f->is_saved)) {  // is there user input data
+            $registrants = $db->selectObjects('forms_' . $f->table_name, "referrer = {$this->id}", "timestamp");
+            foreach ($registrants as $registrant) {
+                $order_data = expUnserialize($registrant->location_data);
+                $order_ids_complete[] = $order_data->order_id;
+            }
+        } else {
+            $order_ids_complete = $db->selectColumn("eventregistration_registrants", "connector_id", "connector_id <> '0' AND event_id = {$this->id}", "registered_date", true);
+        }
+        // build list of completed orders
+        $orders = new order();
+        $order_ids = array();
+        foreach ($order_ids_complete as $item) {
+            $odr = $orders->find("first", "id ='{$item}' and invoice_id <> 0");
+            if (!empty($odr) || strpos($item, "admin-created") !== false) {
+                $order_ids[] = $item;
+            }
+        }
+        // build list of registrants with completed orders
+        if (!empty($order_ids)) {
             if (!empty($f->is_saved)) {  // is there user input data
                 $registrants = $db->selectObjects('forms_' . $f->table_name, "referrer = {$this->id}", "timestamp");
                 foreach ($registrants as $key=>$registrant) {
                     $order_data = expUnserialize($registrant->location_data);
-                    $order_ids_complete[] = $order_data->order_id;
-                }
-            } else {
-                $order_ids_complete = $db->selectColumn("eventregistration_registrants", "connector_id", "connector_id <> '0' AND event_id = {$this->id}", "registered_date", true);
-            }
-            // build list of completed orders
-            $orders = new order();
-            $order_ids = array();
-            foreach ($order_ids_complete as $item) {
-                $odr = $orders->find("first", "id ='{$item}' and invoice_id <> 0");
-                if (!empty($odr) || strpos($item, "admin-created") !== false) {
-                    $order_ids[] = $item;
-                }
-            }
-            // build list of registrants with completed orders
-            if (!empty($order_ids)) {
-                if (!empty($f->is_saved)) {  // is there user input data
-                    $registrants = $db->selectObjects('forms_' . $f->table_name, "referrer = {$this->id}", "timestamp");
-                    foreach ($registrants as $key=>$registrant) {
-                        $order_data = expUnserialize($registrant->location_data);
-                        if (in_array($order_data->order_id, $order_ids)) {
-                            $registered[$key] = $registrant;
-                            if (is_numeric($order_data->order_id)) {
-                                $registered[$key]->order_id = $order_data->order_id;
-                                $order = new order($order_data->order_id);
-    //                            $billingstatus = expUnserialize($order->billingmethod[0]->billing_options);
-    //                            $registered[$key]->payment = !empty($billingstatus->payment_due) ? gt('payment due') : gt('paid');
-                                $billingstatus = $order->billingmethod[0]->transaction_state;
-                                $registered[$key]->payment = !empty($billingstatus) ? $billingstatus : '???';
-                            } else {
-                                $registered[$key]->payment = '???';
-                            }
+                    if (in_array($order_data->order_id, $order_ids)) {
+                        $registered[$key] = $registrant;
+                        if (is_numeric($order_data->order_id)) {
+                            $registered[$key]->order_id = $order_data->order_id;
+                            $order = new order($order_data->order_id);
+//                            $billingstatus = expUnserialize($order->billingmethod[0]->billing_options);
+//                            $registered[$key]->payment = !empty($billingstatus->payment_due) ? gt('payment due') : gt('paid');
+                            $billingstatus = $order->billingmethod[0]->transaction_state;
+                            $registered[$key]->payment = !empty($billingstatus) ? $billingstatus : '???';
+                        } else {
+                            $registered[$key]->payment = '???';
                         }
                     }
-                } else {
-                    foreach ($order_ids as $order_id) {
-                        $registrants = $db->selectObjects("eventregistration_registrants", "connector_id ='{$order_id}'");
-                        foreach ($registrants as $person) {
-                            $new_registered = new stdClass();
-                            $new_registered->id = $person->id;
-                            $new_registered->user = $person->control_name;
-                            $new_registered->qty = $person->value;
-                            $new_registered->registered_date = $person->registered_date;
-                            if (is_numeric($person->connector_id)) {
-                                $new_registered->order_id = $order_id;
-                                $order = new order($person->connector_id);
+                }
+            } else {
+                foreach ($order_ids as $order_id) {
+                    $registrants = $db->selectObjects("eventregistration_registrants", "connector_id ='{$order_id}'");
+                    foreach ($registrants as $person) {
+                        $new_registered = new stdClass();
+                        $new_registered->id = $person->id;
+                        $new_registered->user = $person->control_name;
+                        $new_registered->qty = $person->value;
+                        $new_registered->registered_date = $person->registered_date;
+                        if (is_numeric($person->connector_id)) {
+                            $new_registered->order_id = $order_id;
+                            $order = new order($person->connector_id);
     //                            $billingstatus = expUnserialize($order->billingmethod[0]->billing_options);
     //                            $new_registered->payment = !empty($billingstatus->payment_due) ? gt('payment due') : gt('paid');
-                                $billingstatus = $order->billingmethod[0]->transaction_state;
-                                $new_registered->payment = !empty($billingstatus) ? $billingstatus : '???';
-                            } else {
-                                $new_registered->payment = '???';
-                            }
-                            $registered[] = $new_registered;
+                            $billingstatus = $order->billingmethod[0]->transaction_state;
+                            $new_registered->payment = !empty($billingstatus) ? $billingstatus : '???';
+                        } else {
+                            $new_registered->payment = '???';
                         }
+                        $registered[] = $new_registered;
                     }
                 }
             }
@@ -769,16 +774,20 @@ class eventregistration extends expRecord {
         $count = 0;
         if (!empty($this->forms_id)) {
             $f = new forms($this->forms_id);
-            if (!empty($f->is_saved)) {
-                $count = count($this->getRegistrants());
-            } else {
-                $blind_regs = $this->getRegistrants();
-                foreach ($blind_regs as $blind_reg) {
-                    $count += $blind_reg->qty;
-                }
+        }
+        if (!empty($f->is_saved)) {
+            $count = count($this->getRegistrants());
+        } else {
+            $blind_regs = $this->getRegistrants();
+            foreach ($blind_regs as $blind_reg) {
+                $count += $blind_reg->qty;
             }
         }
         return $count;
+    }
+
+    public function isChild() {
+        return false;
     }
 
 }

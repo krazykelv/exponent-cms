@@ -30,10 +30,12 @@ class companyController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         //'files',
         'rss',
-        'tags'
-    ); // all options: ('aggregation','categories','comments','ealerts','files','module_title','pagination','rss','tags')
+        'tags',
+        'twitter',
+    ); // all options: ('aggregation','categories','comments','ealerts','facebook','files','module_title','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Company Listings"); }
     static function description() { return gt("Displays company listings"); }
@@ -63,7 +65,8 @@ class companyController extends expController {
     
     function show()
     {
-        global $db, $user, $router;
+//        global $db, $user, $router;
+        global $user, $router;
         //eDebug($this->params,true);
         
         expHistory::set('viewable', $this->params);
@@ -120,7 +123,8 @@ class companyController extends expController {
     //TODO this is a misnomer as we only accept an id NOT a title and duplicates the show() method
     function showByTitle()
     {
-        global $db, $user, $router;
+//        global $db, $user, $router;
+        global $user, $router;
         //eDebug($this->params,true);
         
         expHistory::set('viewable', $this->params);

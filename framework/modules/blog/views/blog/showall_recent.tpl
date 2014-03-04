@@ -28,10 +28,10 @@
     {if $moduletitle && !($config.hidemoduletitle xor $smarty.const.INVERT_HIDE_TITLE)}{'Recent Posts from'|gettext} '{$moduletitle}'</h1>{/if}
     {permissions}
 		<div class="module-actions">
-			{if $permissions.edit == 1}
+			{if $permissions.create}
 				{icon class=add action=edit text="Add a new blog article"|gettext}
 			{/if}
-            {if $permissions.manage == 1}
+            {if $permissions.manage}
                 {if !$config.disabletags}
                     {icon controller=expTag class="manage" action=manage_module model='blog' text="Manage Tags"|gettext}
                 {/if}
@@ -85,9 +85,9 @@
             </div>
             {permissions}
                 <div class="item-actions">
-                    {if $permissions.edit == 1}
+                    {if $permissions.edit || ($permissions.create && $item->poster == $user->id)}
                         {if $myloc != $item->location_data}
-                            {if $permissions.manage == 1}
+                            {if $permissions.manage}
                                 {icon action=merge id=$item->id title="Merge Aggregated Content"|gettext}
                             {else}
                                 {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -95,7 +95,7 @@
                         {/if}
                         {icon action=edit record=$item}
                     {/if}
-                    {if $permissions.delete == 1}
+                    {if $permissions.delete || ($permissions.create && $item->poster == $user->id)}
                         {icon action=delete record=$item}
                     {/if}
                 </div>
@@ -106,7 +106,10 @@
                         {filedisplayer view="`$config.filedisplay`" files=$item->expFile record=$item is_listing=1}
                     {/if}
                     {if $config.usebody==1}
-                        <p>{$item->body|summarize:"html":"paralinks"}</p>
+                        {*<p>{$item->body|summarize:"html":"paralinks"}</p>*}
+                        <p>{$item->body|summarize:"html":"parahtml"}</p>
+                    {elseif $config.usebody==3}
+                        {$item->body|summarize:"html":"parapaged"}
                     {elseif $config.usebody==2}
                     {else}
                         {$item->body}
@@ -115,7 +118,38 @@
                         {filedisplayer view="`$config.filedisplay`" files=$item->expFile record=$item is_listing=1}
                     {/if}
                 </div>
-                {clear}
+            {if $config.enable_facebook_like}
+                <div id="fb-root"></div>
+                <div class="fb-like" data-href="{$smarty.const.URL_FULL}{$item->sef_url}" data-send="false" data-width="{$config.fblwidth|default:'450'}" data-show-faces="{if $config.showfaces}true{else}false{/if}" data-font="{$config.font|default:''}"{if $config.color_scheme} data-colorscheme="{$config.color_scheme}"{/if}{if $config.verb} data-action="{$config.verb}"{/if}"></div>
+                {script unique='facebook_src'}
+                {literal}
+                    (function(d, s, id) {
+                        var js, fjs = d.getElementsByTagName(s)[0];
+                        if (d.getElementById(id)) return;
+                        js = d.createElement(s); js.id = id;
+                        js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+                        fjs.parentNode.insertBefore(js, fjs);
+                    }(document, 'script', 'facebook-jssdk'));
+                {/literal}
+                {/script}
+            {/if}
+            {if $config.enable_tweet}
+                <a href="https://twitter.com/share" class="twitter-share-button" data-url="{$smarty.const.URL_FULL}{$item->sef_url}" data-text="{$item->title}"{if $config.layout} data-count="{$config.layout}"{/if}{if $config.size} data-size="{$config.size}"{/if} data-lang="en">{'Tweet'|gettext}</a>
+                {script unique='tweet_src'}
+                {literal}
+                    !function(d,s,id){
+                        var js,fjs=d.getElementsByTagName(s)[0];
+                        if(!d.getElementById(id)){
+                            js=d.createElement(s);
+                            js.id=id;
+                            js.src="https://platform.twitter.com/widgets.js";
+                            fjs.parentNode.insertBefore(js,fjs);
+                        }
+                    }(document,"script","twitter-wjs");
+                {/literal}
+                {/script}
+            {/if}
+            {clear}
             {/if}
         </div>
         {/if}

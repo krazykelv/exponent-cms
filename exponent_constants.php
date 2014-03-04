@@ -215,7 +215,7 @@ define('DB_FIELD_LEN',	1);
 define('DB_DEFAULT',	2);
 
 /**
- * Database Incremental Field specifier
+ * Database 'Incremental Field' specifier
  *
  * An index for the Exponent Data Definition Language.
  * This index specifies that the field should automatically
@@ -228,12 +228,12 @@ define('DB_DEFAULT',	2);
 define('DB_INCREMENT',	3);
 
 /**
- * Database Primary Key Field specifier
+ * Database 'Primary Key' Field specifier
  *
  * An index for the Exponent Data Definition Language.
- * This index specifies that the field should be treated as the
- * primary key for the table.  There can only be one primary
- * key field per table.
+ * This single unique index specifies that the field should be treated as
+ * the single primary key for the table.  There can one or more fields
+ * marked as 'primary' to establish a composite primary key in the table.
  *
  * @see DB_DEF_ID
  * @see DB_INCREMENT
@@ -241,17 +241,41 @@ define('DB_INCREMENT',	3);
 define('DB_PRIMARY',	4);
 
 /**
- * ????
+ * Database 'Unique Key' Field specifier
+
+ * An index for the Exponent Data Definition Language.
+ * This index specifies that the field should be treated as a
+ * unique key for the table.  There can zero or multiple unique keys
+ * using single or multiple (composite) fields per table.
+ *
+*@see DB_DEF_ID
+ * @see DB_INCREMENT
  */
 define('DB_UNIQUE',	5);
 
 /**
- * ????
+ * Database 'Index' Field specifier
+
+ * An index or key for the Exponent Data Definition Language.
+ * This index specifies that the field should be treated as a
+ * key for the table for more efficient lookups.  There can be
+ * multiple key fields per table but they will NOT be composite keys.
+ *
+*@see DB_DEF_ID
+ * @see DB_INCREMENT
  */
 define('DB_INDEX',		6);
 
 /**
- * ??????
+ * Database 'Full Text' Index Field specifier
+
+ * An index for the Exponent Data Definition Language.
+ * This index specifies that the field should be treated as a
+ * key for the table where full text searches will be performed.
+ * There is only one (composite) Full Text index per table.
+ *
+*@see DB_DEF_ID
+ * @see DB_INCREMENT
  */
 define('DB_FULLTEXT',		7);
 
@@ -461,9 +485,10 @@ if (!defined('YUI3_RELATIVE')) {
 	 * YUI 3 Version Constant
 	 * Changing the version here lets Exponent adjust where to look
 	 */
-	define('YUI3_VERSION', '3.10.1');
+//	define('YUI3_VERSION', '3.12.0');
+    define('YUI3_VERSION', '3.13.0');
     define('YUI3_RELATIVE', PATH_RELATIVE.'external/yui/'.YUI3_VERSION.'/build/');
-	define('YUI3_PATH', PATH_RELATIVE.'external/yui/'.YUI3_VERSION.'/build/');  //TODO deprecated
+//	define('YUI3_PATH', PATH_RELATIVE.'external/yui/'.YUI3_VERSION.'/build/');  //TODO deprecated
 	define('YUI3_URL', URL_FULL.'external/yui/'.YUI3_VERSION.'/build/');
 }
 
@@ -474,7 +499,7 @@ if (!defined('YUI2_RELATIVE')) {
 	 */
 	define('YUI2_VERSION', '2.9.0');
     define('YUI2_RELATIVE', PATH_RELATIVE.'external/yui/2in3/dist/'.YUI2_VERSION.'/build/');
-	define('YUI2_PATH', PATH_RELATIVE.'external/yui/2in3/dist/'.YUI2_VERSION.'/build/');  //TODO deprecated
+//	define('YUI2_PATH', PATH_RELATIVE.'external/yui/2in3/dist/'.YUI2_VERSION.'/build/');  //TODO deprecated
 	define('YUI2_URL', URL_FULL.'external/yui/2in3/dist/'.YUI2_VERSION.'/build/');
 }
 
@@ -483,13 +508,14 @@ if (!defined('JQUERY_RELATIVE')) {
 	 * jQuery/jQueryUI Version Constants
 	 * Changing the version here lets Exponent adjust where to look
 	 */
-	define('JQUERY_VERSION', '1.9.1');
-    define('JQUERYUI_VERSION', '1.10.2');
+	define('JQUERY_VERSION', '1.10.2');
+    define('JQUERYUI_VERSION', '1.10.3');
 	define('JQUERY_RELATIVE', PATH_RELATIVE.'external/jquery/');
     define('JQUERY_PATH', BASE.'external/jquery/');
 	define('JQUERY_URL', URL_FULL.'external/jquery/');
     define('JQUERY_SCRIPT', JQUERY_RELATIVE.'js/jquery-'.JQUERY_VERSION.'.min.js');
-    define('JQUERYUI_SCRIPT', JQUERY_RELATIVE.'js/jquery-ui-'.JQUERYUI_VERSION.'.custom.min.js');
+//    define('JQUERYUI_SCRIPT', JQUERY_RELATIVE.'js/jquery-ui-'.JQUERYUI_VERSION.'.custom.min.js');
+    define('JQUERYUI_SCRIPT', JQUERY_RELATIVE.'js/jquery-ui.min.js');
 }
 
 if (!defined('SMARTY_PATH')) {
@@ -497,7 +523,7 @@ if (!defined('SMARTY_PATH')) {
 	 * Smarty Version Constant
 	 * Changing the version here lets Exponent adjust where to look
 	 */
-	define('SMARTY_VERSION', '3.1.13');
+	define('SMARTY_VERSION', '3.1.15');
 	define('SMARTY_PATH', BASE.'external/Smarty-'.SMARTY_VERSION.'/libs/');
     define('SMARTY_DEVELOPMENT', false);
 }
@@ -507,19 +533,8 @@ if (!defined('SWIFT_PATH')) {
 	 * Swift Version Constant
 	 * Changing the version here lets Exponent adjust where to look
 	 */
-	define('SWIFT_VERSION', '4.3.1');
+	define('SWIFT_VERSION', '5.0.1');
 	define('SWIFT_PATH', BASE.'external/Swift-'.SWIFT_VERSION.'/lib/');
-}
-
-if (!defined('FLOWPLAYER_RELATIVE')) {
-    /*
-	 * Flowplayer Version(s) Constant - Flowplayer doesn't always use same version across all its components
-	 * Changing the version here lets Exponent adjust where to look
-	 */
-	define('FLOWPLAYER_VERSION', '3.2.16');
-	define('FLOWPLAYER_RELATIVE', PATH_RELATIVE.'external/flowplayer-'.FLOWPLAYER_VERSION.'/flowplayer/');
-    define('FLOWPLAYER_MIN_VERSION', '3.2.12');
-    define('FLOWPLAYER_CONTROLS_VERSION', '3.2.15');
 }
 
 ?>

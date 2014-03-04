@@ -22,7 +22,7 @@
 class navigationController extends expController {
     public $basemodel_name = 'section';
     public $useractions = array(
-        'showall' => 'Show Menu',
+        'showall' => 'Show Navigation',
         'breadcrumb' => 'Breadcrumb',
     );
     public $remove_configs = array(
@@ -30,11 +30,13 @@ class navigationController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
         'pagination',
         'rss',
-        'tags'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'tags',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
     public $add_permissions = array(
         'view' => "View Page"
     );
@@ -55,7 +57,8 @@ class navigationController extends expController {
     function searchName() { return gt('Webpage'); }
 
     public function showall() {
-        global $db, $user, $sectionObj, $sections;
+//        global $db, $user, $sectionObj, $sections;
+        global $user, $sectionObj, $sections;
 
         expHistory::set('viewable', $this->params);
         $id      = $sectionObj->id;
@@ -80,13 +83,15 @@ class navigationController extends expController {
     }
 
     public function breadcrumb() {
-        global $db, $user, $sectionObj, $sections;
+//        global $db, $user, $sectionObj, $sections;
+        global $sectionObj;
 
         expHistory::set('viewable', $this->params);
         $id      = $sectionObj->id;
         $current = null;
         // Show not only the location of a page in the hierarchy but also the location of a standalone page
-        $current = $db->selectObject('section', ' id= ' . $id);
+//        $current = $db->selectObject('section', ' id= ' . $id);
+        $current = new section($id);
         if ($current->parent == -1) {  // standalone page
             $navsections = self::levelTemplate(-1, 0);
             foreach ($navsections as $section) {
@@ -160,7 +165,7 @@ class navigationController extends expController {
         return json_encode(self::navhierarchy());
     }
 
-    public static function getChildren(&$i,$notyui=false) {
+    public static function getChildren(&$i, $notyui=false) {
         global $sections;
 
         //		echo "i=".$i."<br>";
@@ -267,7 +272,8 @@ class navigationController extends expController {
      * @return array
      */
     public static function levelTemplate($parent, $depth = 0, $parents = array()) {
-        global $db, $user;
+//        global $db, $user;
+        global $user;
 
         if ($parent != 0) $parents[] = $parent;
         $nodes = array();
@@ -342,18 +348,23 @@ class navigationController extends expController {
      * @param bool   $full           include a 'top' level entry
      * @param string $perm           permission level to build list
      * @param bool   $addstandalones should we add the stand-alone pages also
+     * @param bool   $addinternalalias
      *
      * @return array
      */
-    public static function levelDropDownControlArray($parent, $depth = 0, $ignore_ids = array(), $full = false, $perm = 'view', $addstandalones = false) {
+    public static function levelDropdownControlArray($parent, $depth = 0, $ignore_ids = array(), $full = false, $perm = 'view', $addstandalones = false, $addinternalalias = true) {
         global $db;
 
         $ar = array();
         if ($parent == 0 && $full) {
             $ar[0] = '&lt;' . gt('Top of Hierarchy') . '&gt;';
         }
-        $nodes = $db->selectObjects('section', 'parent=' . $parent, 'rank');
-//		$nodes = expSorter::sort(array('array'=>$nodes,'sortby'=>'rank', 'order'=>'ASC'));
+        if ($addinternalalias) {
+            $intalias = '';
+        } else {
+            $intalias = ' AND alias_type != 2';
+        }
+        $nodes = $db->selectObjects('section', 'parent=' . $parent . $intalias, 'rank');
         foreach ($nodes as $node) {
             if ((($perm == 'view' && $node->public == 1) || expPermissions::check($perm, expCore::makeLocation('navigation', '', $node->id))) && !in_array($node->id, $ignore_ids)) {
                 if ($node->active == 1) {
@@ -362,7 +373,7 @@ class navigationController extends expController {
                     $text = str_pad('', ($depth + ($full ? 1 : 0)) * 3, '.', STR_PAD_LEFT) . '(' . $node->name . ')';
                 }
                 $ar[$node->id] = $text;
-                foreach (self::levelDropdownControlArray($node->id, $depth + 1, $ignore_ids, $full, $perm) as $id => $text) {
+                foreach (self::levelDropdownControlArray($node->id, $depth + 1, $ignore_ids, $full, $perm, $addstandalones, $addinternalalias) as $id => $text) {
                     $ar[$id] = $text;
                 }
             }
@@ -417,10 +428,7 @@ class navigationController extends expController {
             $search_record->keywords  = $section->keywords;
             // now we're going to grab all the textmodules on this page and build the body for the page based off the content
             // of all the text module added together.
-            $loc            = new stdClass();
-            $loc->mod       = 'text';
-            $loc->src       = '';
-            $loc->int       = '';
+            $loc = expCore::makeLocation('text');
             $controllername = 'text';
             foreach ($db->selectObjects('sectionref', "module='" . $controllername . "' AND section=" . $section->id) as $module) {
                 $loc->src   = $module->source;
@@ -485,7 +493,7 @@ class navigationController extends expController {
      *
      * @return array
      */
-    public static function getTemplateHierarchyFlat($parent, $depth = 1) {
+    public static function getTemplateHierarchyFlat($parent, $depth = 1) { //FIXME is this only for deprecated templates?
         global $db;
 
         $arr  = array();
@@ -532,13 +540,13 @@ class navigationController extends expController {
 
     }
 
-    function process_subsections($parent_section, $subtpl) {
+    function process_subsections($parent_section, $subtpl) { //FIXME is this only for deprecated templates?
         global $db, $router;
 
         $section              = new stdClass();
         $section->parent      = $parent_section->id;
         $section->name        = $subtpl->name;
-        $section->sef_name     = $router->encode($section->name);
+        $section->sef_name    = $router->encode($section->name);
         $section->subtheme    = $subtpl->subtheme;
         $section->active      = $subtpl->active;
         $section->public      = $subtpl->public;
@@ -550,6 +558,11 @@ class navigationController extends expController {
         self::process_section($section, $subtpl);
     }
 
+    /**
+     * Delete page and send its contents to the recycle bin
+     *
+     * @param $parent
+     */
     public static function deleteLevel($parent) {
         global $db;
 
@@ -561,23 +574,29 @@ class navigationController extends expController {
         foreach ($secrefs as $secref) {
             $loc = expCore::makeLocation($secref->module, $secref->source, $secref->internal);
             recyclebin::sendToRecycleBin($loc, $parent);
-            if (class_exists($secref->module)) {
-                $modclass = $secref->module;
-                //FIXME: more module/controller glue code
-                if (expModules::controllerExists($modclass)) {
-                    $modclass = expModules::getControllerClassName($modclass);
-                    $mod = new $modclass($loc->src);
-                    $mod->delete_instance();
-                } else {
-                    $mod = new $modclass();
-                    $mod->deleteIn($loc);
-                }
-            }
+            //FIXME if we delete the module & sectionref the module completely disappears
+//            if (class_exists($secref->module)) {
+//                $modclass = $secref->module;
+//                //FIXME: more module/controller glue code
+//                if (expModules::controllerExists($modclass)) {
+//                    $modclass = expModules::getControllerClassName($modclass);
+//                    $mod = new $modclass($loc->src);
+//                    $mod->delete_instance();
+//                } else {
+//                    $mod = new $modclass();
+//                    $mod->deleteIn($loc);
+//                }
+//            }
         }
-        $db->delete('sectionref', 'section=' . $parent);
+//        $db->delete('sectionref', 'section=' . $parent);
         $db->delete('section', 'parent=' . $parent);
     }
 
+    /**
+     * Move content page and its children to stand-alones
+     *
+     * @param $parent
+     */
     public static function removeLevel($parent) {
         global $db;
 
@@ -589,6 +608,9 @@ class navigationController extends expController {
         }
     }
 
+    /**
+     * Check for cascading page view permission, esp. if not public
+     */
     public static function canView($section) {
         global $db;
 
@@ -609,14 +631,15 @@ class navigationController extends expController {
         }
     }
 
+    /**
+     * Check to see if page is public with cascading
+     */
     public static function isPublic($s) {
-        global $db;
-
         if ($s == null) {
             return false;
         }
         while ($s->public && $s->parent > 0) {
-            $s = $db->selectObject('section', 'id=' . $s->parent);
+            $s = new section($s->parent);
         }
         $lineage = (($s->public) ? 1 : 0);
         return $lineage;
@@ -738,10 +761,10 @@ class navigationController extends expController {
             //assign the parent of the moving section to the ID of the target section
             $moveSec->parent = $targSec->id;
             //set the rank of the moving section to 0 since it will appear first in the new order
-            $moveSec->rank = 0;
+            $moveSec->rank = 1;
             //select all children currently of the parent we're about to append to
             $targSecChildren = $db->selectObjects("section", "parent=" . $targSec->id . " ORDER BY rank");
-            //update the ranks of the children to +1 higher to accomodate our new ranl 0 section being moved in.
+            //update the ranks of the children to +1 higher to accommodate our new rank 0 section being moved in.
             $newrank = 1;
             foreach ($targSecChildren as $value) {
                 if ($value->id != $moveSec->id) {
@@ -753,10 +776,10 @@ class navigationController extends expController {
             $db->updateObject($moveSec, 'section');
             if ($oldParent != $moveSec->parent) {
                 //we need to re-rank the children of the parent that the miving section has just left
-                $chilOfLastMove = $db->selectObjects("section", "parent=" . $oldParent . " ORDER BY rank");
-                for ($i = 0; $i < count($chilOfLastMove); $i++) {
-                    $chilOfLastMove[$i]->rank = $i;
-                    $db->updateObject($chilOfLastMove[$i], 'section');
+                $childOfLastMove = $db->selectObjects("section", "parent=" . $oldParent . " ORDER BY rank");
+                for ($i = 0; $i < count($childOfLastMove); $i++) {
+                    $childOfLastMove[$i]->rank = $i;
+                    $db->updateObject($childOfLastMove[$i], 'section');
                 }
 
             }
@@ -785,7 +808,7 @@ class navigationController extends expController {
                     $targSec->rank        = $targSec->rank - 1;
                     $moveSec->rank        = $targSec->rank + 1;
                     $movePreviousSiblings = $db->selectObjects("section", "id!=" . $moveSec->id . " AND parent=" . $targSec->parent . " AND rank<=" . $targSec->rank . " ORDER BY rank");
-                    $rerank               = 0;
+                    $rerank               = 1;
                     foreach ($movePreviousSiblings as $value) {
                         if ($value->id != $moveSec->id) {
                             $value->rank = $rerank;
@@ -815,7 +838,7 @@ class navigationController extends expController {
                 $db->updateObject($moveSec, 'section');
                 //handle re-ranking of previous parent
                 $oldSiblings = $db->selectObjects("section", "parent=" . $oldParent . " AND rank>" . $oldRank . " ORDER BY rank");
-                $rerank      = 0;
+                $rerank      = 1;
                 foreach ($oldSiblings as $value) {
                     if ($value->id != $moveSec->id) {
                         $value->rank = $rerank;
@@ -824,11 +847,11 @@ class navigationController extends expController {
                     }
                 }
                 if ($oldParent != $moveSec->parent) {
-                    //we need to re-rank the children of the parent that the miving section has just left
-                    $chilOfLastMove = $db->selectObjects("section", "parent=" . $oldParent . " ORDER BY rank");
-                    for ($i = 0; $i < count($chilOfLastMove); $i++) {
-                        $chilOfLastMove[$i]->rank = $i;
-                        $db->updateObject($chilOfLastMove[$i], 'section');
+                    //we need to re-rank the children of the parent that the moving section has just left
+                    $childOfLastMove = $db->selectObjects("section", "parent=" . $oldParent . " ORDER BY rank");
+                    for ($i = 0; $i < count($childOfLastMove); $i++) {
+                        $childOfLastMove[$i]->rank = $i;
+                        $db->updateObject($childOfLastMove[$i], 'section');
                     }
                 }
             }
@@ -863,7 +886,8 @@ class navigationController extends expController {
             // ALWAYS be invoked with a parent or id value.
             $section  = new section($this->params);
         } else {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
             exit;
         }
         if (!empty($section->id)) {
@@ -879,7 +903,9 @@ class navigationController extends expController {
                     // This is another precaution.  The parent attribute
                     // should ALWAYS be set by the caller.
                     //FJD - if that's the case, then we should die.
-                    die(SITE_403_HTML);
+//                    die(SITE_403_HTML);
+                    notfoundController::handle_not_authorized();
+                    exit;
                     //$section->parent = 0;
                 }
             }
@@ -887,14 +913,16 @@ class navigationController extends expController {
                 'section' => $section,
             ));
         } else {  // User does not have permission to manage sections.  Throw a 403
-            echo SITE_403_HTML;
+//            echo SITE_403_HTML;
+            notfoundController::handle_not_authorized();
         }
     }
 
     function edit_internalalias() {
         $section = isset($this->params['id']) ? $this->section->find($this->params['id']) : new section($this->params);
         if ($section->parent == -1) {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
             exit;
         } // doesn't work for standalone pages
         if (empty($section->id)) {
@@ -903,7 +931,9 @@ class navigationController extends expController {
                 // This is another precaution.  The parent attribute
                 // should ALWAYS be set by the caller.
                 //FJD - if that's the case, then we should die.
-                die(SITE_403_HTML);
+//                die(SITE_403_HTML);
+                notfoundController::handle_not_authorized();
+                exit;
                 //$section->parent = 0;
             }
         }
@@ -915,7 +945,8 @@ class navigationController extends expController {
     function edit_freeform() {
         $section = isset($this->params['id']) ? $this->section->find($this->params['id']) : new section($this->params);
         if ($section->parent == -1) {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
             exit;
         } // doesn't work for standalone pages
         if (empty($section->id)) {
@@ -924,7 +955,9 @@ class navigationController extends expController {
                 // This is another precaution.  The parent attribute
                 // should ALWAYS be set by the caller.
                 //FJD - if that's the case, then we should die.
-                die(SITE_403_HTML);
+//                die(SITE_403_HTML);
+                notfoundController::handle_not_authorized();
+                exit;
                 //$section->parent = 0;
             }
         }
@@ -936,7 +969,8 @@ class navigationController extends expController {
     function edit_externalalias() {
         $section = isset($this->params['id']) ? $this->section->find($this->params['id']) : new section($this->params);
         if ($section->parent == -1) {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
             exit;
         } // doesn't work for standalone pages
         if (empty($section->id)) {
@@ -945,7 +979,9 @@ class navigationController extends expController {
                 // This is another precaution.  The parent attribute
                 // should ALWAYS be set by the caller.
                 //FJD - if that's the case, then we should die.
-                die(SITE_403_HTML);
+//                die(SITE_403_HTML);
+                notfoundController::handle_not_authorized();
+                exit;
                 //$section->parent = 0;
             }
         }
@@ -966,6 +1002,10 @@ class navigationController extends expController {
         ));
     }
 
+    /**
+     * Move standalone back to hierarchy
+     *
+     */
     function reparent_standalone() {
         $standalone = $this->section->find($this->params['page']);
         if ($standalone) {
@@ -974,10 +1014,15 @@ class navigationController extends expController {
             expSession::clearAllUsersSessionCache('navigation');
             expHistory::back();
         } else {
-            echo SITE_404_HTML;
+//            echo SITE_404_HTML;
+            notfoundController::handle_not_found();
         }
     }
 
+    /**
+     * Move content page to standalones
+     *
+     */
     function remove() {
         global $db;
 
@@ -990,7 +1035,8 @@ class navigationController extends expController {
             expSession::clearAllUsersSessionCache('navigation');
             expHistory::back();
         } else {
-            echo SITE_403_HTML;
+//            echo SITE_403_HTML;
+            notfoundController::handle_not_authorized();
         }
     }
 
@@ -999,7 +1045,7 @@ class navigationController extends expController {
             foreach ($this->params['deleteit'] as $page) {
                 $section = new section(intval($page));
                 if ($section) {
-                    navigationController::deleteLevel($section->id);
+//                    navigationController::deleteLevel($section->id);
                     $section->delete();
                 }
             }
@@ -1010,17 +1056,85 @@ class navigationController extends expController {
 
     // create a psuedo global manage pages permission
     public static function checkPermissions($permission,$location) {
-        global $exponent_permissions_r, $user, $db, $router;
+//        global $exponent_permissions_r, $user, $db, $router;
+        global $exponent_permissions_r, $router;
 
         // only applies to the 'manage' method
         if (empty($location->src) && empty($location->int) && !empty($router->params['action']) && $router->params['action'] == 'manage') {
-            if (!empty($exponent_permissions_r['navigationController'])) foreach ($exponent_permissions_r['navigationController'] as $page) {
+            if (!empty($exponent_permissions_r['navigation'])) foreach ($exponent_permissions_r['navigation'] as $page) {
                 foreach ($page as $pageperm) {
                     if (!empty($pageperm['manage'])) return true;
                 }
             }
         }
         return false;
+    }
+
+    /**
+     * Rebuild the sectionref table as a list of modules on a page
+     */
+    public static function rebuild_sectionrefs() {
+        global $db;
+
+        // recursive run though all the nested containers
+        function scan_container($container_id, $page_id) {
+            global $db;
+
+            $containers = $db->selectObjects('container',"external='" . $container_id . "'");
+            $ret = '';
+            foreach ($containers as $container) {
+                $iLoc = expUnserialize($container->internal);
+                $newret = recyclebin::restoreFromRecycleBin($iLoc, $page_id);
+                if (!empty($newret)) $ret .= $newret . '<br>';
+                if ($iLoc->mod == 'container') {
+                    $ret .= scan_container($container->internal, $page_id);
+                }
+            }
+            return $ret;
+        }
+
+        // recursive run through all the nested pages
+        function scan_page($parent_id) {
+            global $db;
+
+            $sections = $db->selectObjects('section','parent=' . $parent_id);
+            $ret = '';
+            foreach ($sections as $page) {
+                $cLoc = serialize(expCore::makeLocation('container','@section' . $page->id));
+                $ret .= scan_container($cLoc, $page->id);
+                $ret .= scan_page($page->id);
+            }
+            return $ret;
+        }
+
+        // first remove duplicate records
+        $db->sql('DELETE FROM ' . DB_TABLE_PREFIX . '_sectionref WHERE id NOT IN (SELECT * FROM (SELECT MIN(n.id) FROM ' . DB_TABLE_PREFIX . '_sectionref n GROUP BY n.module, n.source) x)');
+        $ret = scan_page(0);  // the page hierarchy
+        $ret .= scan_page(-1);  // now the stand alone pages
+
+        // we need to get the non-main containers such as sidebars, footers, etc...
+        $hardcodedmods = $db->selectObjects('sectionref',"refcount=1000 AND source NOT LIKE '%@section%' AND source NOT LIKE '%@random%'");
+        foreach ($hardcodedmods as $hardcodedmod) {
+            if ($hardcodedmod->module == 'container') {
+                $page_id = intval(preg_replace('/\D/', '', $hardcodedmod->source));
+                if (empty($page_id)) {
+                    $page_id = SITE_DEFAULT_SECTION;  // we'll default to the home page
+                }
+                $ret .= scan_container(serialize(expCore::makeLocation($hardcodedmod->module, $hardcodedmod->source)), $page_id);
+            } else {
+                $hardcodedmod->section = 0;  // this is a hard-coded non-container module
+                $db->updateObject($hardcodedmod, 'sectionref');
+            }
+        }
+
+        // mark modules in the recycle bin as section 0
+        $db->columnUpdate('sectionref', 'section', 0, "refcount=0");
+//        $recycledmods = $db->selectObjects('sectionref',"refcount=0");
+//        foreach ($recycledmods as $recycledmod) {
+//            $recycledmod->section = 0;  // this is a module in the recycle bin
+//            $db->updateObject($recycledmod, 'sectionref');
+//        }
+        return $ret;
     }
 
 }

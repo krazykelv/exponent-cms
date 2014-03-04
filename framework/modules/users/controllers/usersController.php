@@ -38,8 +38,6 @@ class usersController extends expController {
         'edit'
     );
 
-    //public $useractions = array('showall'=>'Show all');
-
     static function displayname() {
         return gt("User Manager");
     }
@@ -107,7 +105,7 @@ class usersController extends expController {
         $id = !empty($this->params['id']) ? $this->params['id'] : null;
 
         // check to see if we should be editing.  You either need to be an admin, or editing own account.
-        if ($user->isAdmin() || ($user->id == $id)) {
+        if ($user->isAdmin() || ($user->id == $id && !$user->globalPerm('prevent_profile_change'))) {
             $u = new user($id);
         } else {
             flash('error', gt('You do not have the proper permissions to edit this user'));
@@ -327,7 +325,8 @@ class usersController extends expController {
     }
 
     public function manage_sessions() {
-        global $db, $user;
+//        global $db, $user;
+        global $db;
 
         expHistory::set('manageable', $this->params);
 
@@ -404,11 +403,11 @@ class usersController extends expController {
 
         // Lets find all the user profiles availabe and then see if they are
         // in the database yet.  If not we will add them.
-        $extdirs = array(
+        $ext_dirs = array(
             'framework/modules/users/extensions',
-            'themes/' . DISPLAY_THEME . 'framework/modules/users/extensions'
+            'themes/' . DISPLAY_THEME . '/modules/users/extensions'
         );
-        foreach ($extdirs as $dir) {
+        foreach ($ext_dirs as $dir) {
             if (is_readable(BASE . $dir)) {
                 $dh = opendir(BASE . $dir);
                 while (($file = readdir($dh)) !== false) {
@@ -490,7 +489,7 @@ class usersController extends expController {
         $u = new user($u->id);
 
         if (!expValidator::check_antispam($this->params)) {
-            expValidator::failAndReturnToForm(gt('Anti-spam verification failed'), $this->params);
+            expValidator::failAndReturnToForm(gt('Anti-spam verification failed.  Please try again.'), $this->params);
         } elseif (empty($u->id)) {
             expValidator::failAndReturnToForm(gt('We were unable to find an account with that username/email'), $this->params);
         } elseif (empty($u->email)) {
@@ -787,7 +786,8 @@ class usersController extends expController {
     }
 
     public function update_memberships() {
-        global $user, $db;
+//        global $user, $db;
+        global $db;
 
         //$memb = $db->selectObject('groupmembership','member_id='.$user->id.' AND group_id='.$this->params['id'].' AND is_admin=1');
         $group = $db->selectObject('group', 'id=' . $this->params['id']);
@@ -807,7 +807,7 @@ class usersController extends expController {
     }
 
     public function getUsersByJSON() {
-        global $db, $user;
+//        global $db, $user;
         $modelname = $this->basemodel_name;
         $results = 25; // default get all
         $startIndex = 0; // default start at 0
@@ -1002,7 +1002,7 @@ class usersController extends expController {
             $p[gt("User Name")] = 'username';
             $p[gt("First Name")] = 'firstname';
             $p[gt("Last Name")] = 'lastname';
-            foreach ($mod->permissions() as $key => $value) {
+            foreach ($mod->permissions() as $value) {
                 //        $p[gt($value)]=$key;
                 $p[gt($value)] = 'no-sort';
             }
@@ -1046,7 +1046,8 @@ class usersController extends expController {
                 'title'      => ($loc->mod != 'navigation' || ($loc->mod == 'navigation' && !empty($loc->src))) ? $mod->name() . ' ' . ($loc->mod != 'container' ? gt('module') : '') . ' ' : gt('Page'),
             ));
         } else {
-            echo SITE_403_HTML;
+//            echo SITE_403_HTML;
+            notfoundController::handle_not_authorized();
         }
     }
 
@@ -1098,7 +1099,7 @@ class usersController extends expController {
             }
 
             $p[gt("Group")] = 'username';
-            foreach ($mod->permissions() as $key => $value) {
+            foreach ($mod->permissions() as $value) {
                 //        $p[gt($value)]=$key;
                 $p[gt($value)] = 'no-sort';
             }
@@ -1143,7 +1144,8 @@ class usersController extends expController {
                 'title'      => ($loc->mod != 'navigation' || ($loc->mod == 'navigation' && !empty($loc->src))) ? $mod->name() . ' ' . ($loc->mod != 'container' ? gt('module') : '') . ' ' : gt('Page'),
             ));
         } else {
-            echo SITE_403_HTML;
+//            echo SITE_403_HTML;
+            notfoundController::handle_not_authorized();
         }
     }
 
@@ -1169,11 +1171,6 @@ class usersController extends expController {
                 "error" => "The /tmp directory is not writable.  Please contact your administrator.",
             ));
         } else {
-            //Setup the mete data (hidden values)
-            $form = new form();
-            $form->meta("controller", "users");
-            $form->meta("action", "import_users_mapper");
-
             //Setup the arrays with the name/value pairs for the dropdown menus
             $delimiterArray = Array(
                 ',' => gt('Comma'),
@@ -1181,15 +1178,21 @@ class usersController extends expController {
                 ':' => gt('Colon'),
                 ' ' => gt('Space'));
 
-            //Register the dropdown menus
-            $form->register("delimiter", gt('Delimiter Character'), new dropdowncontrol(",", $delimiterArray));
-            $form->register("upload", gt('CSV File to Upload'), new uploadcontrol());
-            $form->register("use_header", gt('First Row is a Header'), new checkboxcontrol(0, 0));
-            $form->register("rowstart", gt('User Data begins in Row'), new textcontrol("1", 1, 0, 6));
-            $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
+//            //Setup the mete data (hidden values)
+//            $form = new form();
+//            $form->meta("controller", "users");
+//            $form->meta("action", "import_users_mapper");
+//
+//            //Register the dropdown menus
+//            $form->register("delimiter", gt('Delimiter Character'), new dropdowncontrol(",", $delimiterArray));
+//            $form->register("upload", gt('CSV File to Upload'), new uploadcontrol());
+//            $form->register("use_header", gt('First Row is a Header'), new checkboxcontrol(0, 0));
+//            $form->register("rowstart", gt('User Data begins in Row'), new textcontrol("1", 1, 0, 6));
+//            $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
 
             assign_to_template(array(
-                "form_html" => $form->tohtml(),
+//                "form_html" => $form->tohtml(),
+                'delimiters' => $delimiterArray,
             ));
         }
     }
@@ -1291,15 +1294,6 @@ class usersController extends expController {
     }
 
     public function import_users_process() {
-        $form = new form();
-        $form->meta("controller", "users");
-        $form->meta("action", "import_users_display");
-        $form->meta("column", $this->params["column"]);
-        $form->meta("delimiter", $this->params["delimiter"]);
-        $form->meta("use_header", $this->params["use_header"]);
-        $form->meta("filename", $this->params["filename"]);
-        $form->meta("rowstart", $this->params["rowstart"]);
-
         if (in_array("username", $this->params["column"]) == false) {
             $unameOptions = array(
                 "FILN"    => gt('First Initial / Last Name'),
@@ -1323,14 +1317,26 @@ class usersController extends expController {
             $disabled = false;
         }
 
-        $form->register("unameOptions", gt('User Name Generations Options'), new dropdowncontrol("INFILE", $unameOptions));
-        $form->register("pwordOptions", gt('Password Generation Options'), new dropdowncontrol("defpass", $pwordOptions));
-        $form->register("pwordText", gt('Default Password'), new textcontrol("", 10, $disabled));
-        $form->register("update", gt('Update users already in database, instead of creating new user?'), new checkboxcontrol(0, 0));
-        $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
+//        $form = new form();
+//        $form->meta("controller", "users");
+//        $form->meta("action", "import_users_display");
+//        $form->meta("column", $this->params["column"]);
+//        $form->meta("delimiter", $this->params["delimiter"]);
+//        $form->meta("use_header", $this->params["use_header"]);
+//        $form->meta("filename", $this->params["filename"]);
+//        $form->meta("rowstart", $this->params["rowstart"]);
+//
+//        $form->register("unameOptions", gt('User Name Generations Options'), new dropdowncontrol("INFILE", $unameOptions));
+//        $form->register("pwordOptions", gt('Password Generation Options'), new dropdowncontrol("defpass", $pwordOptions));
+//        $form->register("pwordText", gt('Default Password'), new textcontrol("", 10, $disabled));
+//        $form->register("update", gt('Update users already in database, instead of creating new user?'), new checkboxcontrol(0, 0));
+//        $form->register("submit", "", new buttongroupcontrol(gt('Next'), "", gt('Cancel')));
 
         assign_to_template(array(
-            "form_html" => $form->tohtml(),
+//            "form_html" => $form->tohtml(),
+            'uname_options' => $unameOptions,
+            'pword_options' => $pwordOptions,
+            'pword_disabled' => $disabled,
         ));
     }
 
@@ -1606,6 +1612,15 @@ class usersController extends expController {
             "userarray" => $userarray,
         ));
         unlink(BASE . $this->params["filename"]);
+    }
+
+    public function sync_LDAPUsers() {
+        if (USE_LDAP == 1 && function_exists('ldap_connect')) {
+            $ldap = new expLDAP();
+            $updated = $ldap->syncLDAPUsers();
+            $ldap->close();
+            flash('message', $updated.' '.gt('LDAP Users Updated'));
+        }
     }
 
 }

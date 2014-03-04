@@ -29,8 +29,18 @@ class eaasController extends expController {
         // 'dates'=>"Dates",
     );
     public $remove_configs = array(
-        'module','aggregation','categories','comments','ealerts','files','module_title','pagination','rss','tags'
-    ); // all options: ('aggregation','categories','comments','ealerts','files','module_title','pagination','rss','tags')
+        'aggregation',
+        'categories',
+        'comments',
+        'ealerts',
+        'facebook',
+        'files',
+        'module',
+        'pagination',
+        'rss',
+        'tags',
+        'twitter',
+    ); // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
     public $add_permissions = array(
         // 'approve'=>"Approve Comments"
     );
@@ -39,7 +49,8 @@ class eaasController extends expController {
         'aboutus'=>'About Us', 
         'blog'=>'Blog', 
         'photo'=>'Photos', 
-        'youtube'=>'YouTube Videos', 
+        'media'=>'Media',
+        'youtube'=>'YouTube Videos',  //FIXME to be removed
         'event'=>'Events', 
         'filedownload'=>'File Downloads', 
         'news'=>'News'
@@ -50,7 +61,7 @@ class eaasController extends expController {
     static function description() { return gt("This module allows you make service calls and return JSON for parts of Exponent"); }
     static function author() { return "Phillip Ball - OIC Group, Inc"; }
     static function hasSources() { return false; }  // must be explicitly added by config['add_source'] or config['aggregate']
-    static function isSearchable() { return true; }
+//    static function isSearchable() { return true; }
 
     public function showall() {
         expHistory::set('viewable', $this->params);
@@ -104,7 +115,12 @@ class eaasController extends expController {
                 $ar = new expAjaxReply(200, 'ok', $data, null);
                 $ar->send();
                 break;
-            case 'youtube':
+            case 'media':
+                $data = $this->media();
+                $ar = new expAjaxReply(200, 'ok', $data, null);
+                $ar->send();
+                break;
+            case 'youtube':  //FIXME to be removed
                 $data = $this->youtube();
                 $ar = new expAjaxReply(200, 'ok', $data, null);
                 $ar->send();
@@ -177,7 +193,7 @@ class eaasController extends expController {
         return $data;
     }
 
-    private function youtube() {
+    private function youtube() {  //FIXME must replace with media player and then removed
         $data = array();
         if (!empty($this->params['id'])) {
             $youtube = new youtube($this->params['id']);
@@ -196,6 +212,38 @@ class eaasController extends expController {
             $order = isset($this->params['order']) ? $this->params['order'] : 'created_at ASC';
 
             $items = $youtube->find('all', $this->aggregateWhereClause('youtube'), $order, $limit);
+            $data['records'] = $items;
+        }
+
+        $img = $this->getImage($this->params['get']);
+        if ($img) {
+            $data['banner']['obj'] = $img;
+            $data['banner']['md5'] = md5_file($img->path);
+        }
+
+        $data['html'] = $this->config[$this->params['get'].'_body'];
+        return $data;
+    }
+
+    private function media() {
+        $data = array();
+        if (!empty($this->params['id'])) {
+            $media = new media($this->params['id']);
+            $data['records'] = $media;
+
+        } else {
+            $media = new media();
+
+            // figure out if should limit the results
+            if (isset($this->params['limit'])) {
+                $limit = $this->params['limit'] == 'none' ? null : $this->params['limit'];
+            } else {
+                $limit = '';
+            }
+
+            $order = isset($this->params['order']) ? $this->params['order'] : 'created_at ASC';
+
+            $items = $media->find('all', $this->aggregateWhereClause('media'), $order, $limit);
             $data['records'] = $items;
         }
 
@@ -326,7 +374,7 @@ class eaasController extends expController {
 
         if (!empty($this->params['groupbydate'])&&!empty($items)) {
             $data['records'] = array();
-            foreach ($items as $key => $value) {
+            foreach ($items as $value) {
                 $data['records'][date('r',$value->eventdate[0]->date)][] = $value;
                 // edebug($value);
             }
@@ -348,11 +396,13 @@ class eaasController extends expController {
         $dir = isset($this->params['dir']) ? $this->params['dir'] : '';
         
         $views = get_config_templates($this, $this->loc);
+        $pullable = array();
+        $page = array();
 
         foreach ($this->tabs as $tab => $name) {
             // news tab
             if ($tab!='aboutus') {
-                $pullable[$tab] = expModules::listInstalledControllers($tab.'Controller', $this->loc);
+                $pullable[$tab] = expModules::listInstalledControllers($tab, $this->loc);
                 $page[$tab] = new expPaginator(array(
                     'controller'=>$tab.'Controller',
                     'records'=>$pullable[$tab],
@@ -392,7 +442,6 @@ class eaasController extends expController {
         $sql .= '(';
         $sql .= "location_data ='".serialize($this->loc)."'";
 
-        
         if (!empty($this->config[$type.'_aggregate'])) {
             foreach ($this->config[$type.'_aggregate'] as $src) {
                 $loc = expCore::makeLocation($type, $src);

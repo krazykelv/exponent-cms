@@ -20,7 +20,8 @@ if (!defined('EXPONENT')) exit('');
 
 global $user, $db;
 
-//$my_version = gt("Exponent Version") . " : " . EXPONENT_VERSION_MAJOR . "." . EXPONENT_VERSION_MINOR . "." . EXPONENT_VERSION_REVISION . "<br />";
+if ($user->globalPerm('hide_exp_menu')) return array();
+
 $my_version = gt("Exponent Version") . " : " . expVersion::getVersion(true, false, false) . "<br />";
 if (EXPONENT_VERSION_TYPE != '') {
     $my_type = gt("Release level") . " : " . EXPONENT_VERSION_TYPE . EXPONENT_VERSION_ITERATION . "<br />";
@@ -70,6 +71,15 @@ if ($user->isAdmin()) {
             )
         )
     );
+
+    $expAdminMenu['submenu']['itemdata'][] = array(
+        'text' => gt("Configure Website"),
+        'classname' => 'configure',
+        'url'  => makeLink(array(
+            'controller' => 'administration',
+            'action'     => 'configure_site'
+        ))
+    );
 } else {
     $expAdminMenu = array(
         'text'      => '<img src="' . $this->asset_path . 'images/admintoolbar/expbar.png">',
@@ -105,51 +115,6 @@ if ($user->isAdmin()) {
             )
         )
     );
-}
-
-if ($user->isAdmin()) {
-    if (SMTP_USE_PHP_MAIL) {
-        $expAdminMenu['submenu']['itemdata'][] = array(
-            'text'      => gt("Site Configuration"),
-            'classname' => 'configure',
-            'submenu'   => array(
-                'id'       => 'configure',
-                'itemdata' => array(
-                    array(
-                        'text' => gt("Configure Website"),
-                        'url'  => makeLink(array(
-                            'controller' => 'administration',
-                            'action'     => 'configure_site'
-                        ))
-                    ),
-                )
-            )
-        );
-    } else {
-        $expAdminMenu['submenu']['itemdata'][] = array(
-            'text'      => gt('Site Configuration'),
-            'classname' => 'configure',
-            'submenu'   => array(
-                'id'       => 'configure',
-                'itemdata' => array(
-                    array(
-                        'text' => gt("Configure Website"),
-                        'url'  => makeLink(array(
-                            'controller' => 'administration',
-                            'action'     => 'configure_site'
-                        ))
-                    ),
-                    array(
-                        'text' => gt('Test SMTP Mail Server Settings'),
-                        'url'  => makeLink(array(
-                            'controller' => 'administration',
-                            'action'     => 'test_smtp'
-                        ))
-                    ),
-                )
-            )
-        );
-    }
 }
 
 if ($user->isAdmin()) {
@@ -283,6 +248,15 @@ if ($user->isAdmin() || !empty($groups)) {
 
 if ($user->isSuperAdmin()) {
     $tmp = count($expAdminMenu['submenu']['itemdata']);
+    if (USE_LDAP && function_exists('ldap_connect')) {
+        $expAdminMenu['submenu']['itemdata'][count($expAdminMenu['submenu']['itemdata']) - 1]['submenu']['itemdata'][] = array(
+            'text'      => gt('Sync LDAP Users'),
+            'url'       => makeLink(array(
+                'controller' => 'users',
+                'action'     => 'sync_LDAPUsers'
+            )),
+        );
+    }
     $expAdminMenu['submenu']['itemdata'][count($expAdminMenu['submenu']['itemdata']) - 1]['submenu']['itemdata'][] = array(
         'text'      => gt('Mass Mailer'),
         'url'       => makeLink(array(
@@ -532,6 +506,18 @@ if ($user->isSuperAdmin()) {
             )
         )
     );
+
+    if (!SMTP_USE_PHP_MAIL) {
+        $expAdminMenu['submenu']['itemdata'][count($expAdminMenu['submenu']['itemdata']) - 1]['submenu']['itemdata'][] = array(
+            'text' => gt('Test SMTP Mail Server Settings'),
+            'classname' => 'configure',
+            'url'  => makeLink(array(
+                'controller' => 'administration',
+                'action'     => 'test_smtp'
+            )),
+        );
+    }
+
 }
 
 return $expAdminMenu;

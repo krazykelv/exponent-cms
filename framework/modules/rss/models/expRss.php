@@ -25,12 +25,12 @@
 
 class expRss extends expRecord {
     public $table = 'expRss';
-    protected $attachable_item_types = array(
-        //'content_expFiles'=>'expFile', 
-        //'content_expTags'=>'expTag', 
-        //'content_expComments'=>'expComment',
-        //'content_expSimpleNote'=>'expSimpleNote',
-    );
+//    protected $attachable_item_types = array(
+//        //'content_expFiles'=>'expFile',
+//        //'content_expTags'=>'expTag',
+//        //'content_expComments'=>'expComment',
+//        //'content_expSimpleNote'=>'expSimpleNote',
+//    );
 
     public function __construct($params=array()) {
         global $db;
@@ -53,10 +53,10 @@ class expRss extends expRecord {
     
 	// override the update function in order to make sure we don't save duplicate entries
 	// as save called from expController does not have an id set.
-	public function update($params=array()){
-		//FIXME do we really need to sub class this since we just call parent?
-		parent::update($params);
-	}
+//	public function update($params=array()){
+//		//FIXME do we really need to sub class this since we just call parent?
+//		parent::update($params);
+//	}
 	
     public function beforeSave() {
         $this->module = expModules::getControllerName($this->module);

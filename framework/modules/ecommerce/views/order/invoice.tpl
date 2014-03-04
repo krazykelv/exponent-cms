@@ -16,9 +16,12 @@
 {if $printerfriendly==1}
     {$pf=1}
     {*{if $include_css == true}*}
-        {css unique="invoice" link="`$smarty.const.PATH_RELATIVE`framework/modules/ecommerce/assets/css/print-invoice.css"}    
-        {/css}
+        {*{css unique="invoice" link="`$smarty.const.PATH_RELATIVE`framework/modules/ecommerce/assets/css/print-invoice.css"}    *}
+        {*{/css}*}
     {*{/if}*}
+    <style type="text/css">
+        {$css}
+    </style>
 {else}
     {css unique="invoice" link="`$smarty.const.PATH_RELATIVE`framework/modules/ecommerce/assets/css/invoice.css"}
     {/css}
@@ -64,7 +67,7 @@
                         {$order->invoice_id}
                         {permissions}
                             <div class="item-permissions">
-                                {if $permissions.edit_invoice_id == 1 && !$pf}
+                                {if $permissions.edit_invoice_id && !$pf}
                                     {icon class="edit" action=edit_invoice_id id=$order->id title='Edit Invoice Number'|gettext}
                                 {/if}
                             </div>
@@ -78,7 +81,7 @@
                     </td>
                     <td>
                         {if $order->shipped}
-                            {if $order->shipped == -1}
+                            {if !$order->shipping_required}
                                 {'No Shipping Required'|gettext}
                             {else}
                                 {$order->shipped|format_date:"%A, %B %e, %Y":"Not Shipped Yet"}
@@ -113,7 +116,7 @@
                         {$order->billingmethod[0]->addresses_id|address}
                         {permissions}
                             <div class="item-permissions">
-                                {if $permissions.edit_address == 1 && !$pf}
+                                {if $permissions.edit_address && !$pf}
                                     {icon class="edit" action=edit_address id=$order->id type='b' title='Edit Billing Address'|gettext}
                                 {/if}
                             </div>
@@ -124,7 +127,7 @@
                         {$shipping->shippingmethod->addresses_id|address}
                         {permissions}
                             <div class="item-permissions">
-                                {if $permissions.edit_address == 1 && !$pf}                                                                                        
+                                {if $permissions.edit_address && !$pf}
                                     {icon class="edit" action=edit_address id=$order->id type='s' title='Edit Shipping Address'|gettext}
                                 {/if}
                             </div>
@@ -137,7 +140,7 @@
                                     {$shipping->shippingmethod->option_title}
                                     {permissions}
                                         <div class="item-permissions">
-                                            {if $permissions.edit_shipping_method == 1 && !$pf}
+                                            {if $permissions.edit_shipping_method && !$pf}
                                                 {icon class="edit" action=edit_shipping_method id=$order->id title='Edit Shipping Method'|gettext}
                                             {/if}
                                         </div>
@@ -199,6 +202,9 @@
                                 {/if}
                             </span>
                         </div>
+                        {if $billing->calculator != null}
+                        {$data = $billing->calculator->getAVSAddressVerified($billing->billingmethod)|cat:$billing->calculator->getAVSZipVerified($billing->billingmethod)|cat:$billing->calculator->getCVVMatched($billing->billingmethod)|cat:$billing->calculator->getCVVMatched($billing->billingmethod)}
+                        {if  !empty($data)}
                         <div class="odd">
                             <span class="pmt-label">
                                 {"AVS Address Verified"|gettext}
@@ -229,8 +235,10 @@
                                 {/if}
                             </span>
                         </div>
-                         {permissions}
-                            {if $permissions.edit_shipping_method == 1 && !$pf}
+                        {/if}
+                        {/if}
+                        {permissions}
+                            {if $permissions.edit_shipping_method && !$pf}
                                 <div class="item-permissions">
                                     {icon class="edit" action=edit_payment_info id=$order->id title='Edit Payment Method'|gettext}
                                 </div>
@@ -289,7 +297,7 @@
                     </th>
                     {permissions}
                         <div class="item-permissions">
-                            {if $permissions.edit_order_item == 1 && !$pf}                                                                                                             
+                            {if $permissions.edit_order_item && !$pf}
                                 <th style="text-align:right;"></th>     
                             {/if}
                         </div>
@@ -314,11 +322,11 @@
                             {/foreach}                            
                         {/if}
                         {$oi->getUserInputFields('br')} 
-						{if $oi->product_type == "product" || $oi->product_type == "childProduct"}
+						{*{if $oi->product_type == "product" || $oi->product_type == "childProduct"}*}
 							{$oi->getExtraData()}
-						{else}
-							{$oi->getFormattedExtraData('list')}
-						{/if}
+						{*{else}*}
+							{*{$oi->getFormattedExtraData('list')}*}
+						{*{/if}*}
                     </td>
                     <td>
                         {$oi->products_warehouse_location}
@@ -334,7 +342,7 @@
                     </td>
                     {permissions}
                         <div class="item-permissions">
-                            {if $permissions.edit_order_item == 1 && !$pf}                                                                                                             
+                            {if $permissions.edit_order_item && !$pf}
                                 <td style="text-align:right;">
                                     {icon class="edit" action=edit_order_item id=$oi->id orderid=$order->id title='Edit Invoice Item'|gettext}&#160;
                                     {icon class="delete" action=delete_order_item id=$oi->id orderid=$order->id onclick="return confirm('Are you sure you want to delete this item from this order?')" title='Delete Invoice Item'|gettext}
@@ -346,7 +354,7 @@
             {/foreach}
              {permissions}
                 <div class="item-permissions">
-                {if $permissions.add_order_item == 1 && !$pf} 
+                {if $permissions.add_order_item && !$pf}
                     <tr>
                         <td colspan="8"><!--a href="{link action=add_order_item id=$order->id}">[+]</a-->
                         {capture assign="callbacks"}
@@ -535,7 +543,7 @@
                 </tr>                                                                        
                 {permissions}
                     <div class="item-permissions">
-                        {if $permissions.edit_totals == 1 && !$pf}                                                                                                             
+                        {if $permissions.edit_totals && !$pf}
                             <tr class="even">                   
                                 <td style="text-align:right; border-left:0px;" colspan='3'>
                                     {icon class="edit" action=edit_totals orderid=$order->id title='Edit Totals'|gettext}

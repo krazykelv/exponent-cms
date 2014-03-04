@@ -24,13 +24,15 @@
     {/if}
     {if $loggedin == true || $smarty.const.PREVIEW_READONLY == 1}
         {'Welcome'|gettext|cat:', %s'|sprintf:$displayname}<br/>
-        <a class="profile" href="{link controller=users action=edituser id=$user->id}">{'Edit Profile'|gettext}</a>
-        &#160;|&#160;
+        {if !$user->globalPerm('prevent_profile_change')}
+            <a class="profile" href="{link controller=users action=edituser id=$user->id}">{'Edit Profile'|gettext}</a>
+            &#160;|&#160;
+        {/if}
         {if $is_group_admin}
             <a class="groups" href="{link controller=users action=manage_group_memberships}">{'My Groups'|gettext}</a>
             &#160;|&#160;
         {/if}
-        {if !$smarty.const.USER_NO_PASSWORD_CHANGE}
+        {if ((!$smarty.const.USER_NO_PASSWORD_CHANGE || $user->isAdmin()) && !$user->is_ldap)}
             <a class="password" href="{link controller=users action=change_password}">{'Change Password'|gettext}</a>
         {/if}
         &#160;|&#160;

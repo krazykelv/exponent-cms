@@ -29,9 +29,11 @@ class faqController extends expController {
 	public $remove_configs = array(
         'comments',
         'ealerts',
+        'facebook',
         'files',
-        'rss'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'rss',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Frequently Asked Questions"); }
     static function description() { return gt("Display frequently asked questions.  Users may also post new questions to be answered."); }
@@ -46,6 +48,8 @@ class faqController extends expController {
             expCatController::addCats($questions,'rank',!empty($this->config['uncat'])?$this->config['uncat']:gt('Not Categorized'));
             $cats[0] = new stdClass();
             $cats[0]->name = '';
+            $cats[0]->count = 0;
+            $cats[0]->color = null;
             expCatController::sortedByCats($questions,$cats);
             assign_to_template(array(
                 'cats'=>$cats
@@ -101,7 +105,8 @@ class faqController extends expController {
         expHistory::set('manageable', $this->params);
         $page = new expPaginator(array(
             'model'=>'faq',
-            'where' => "location_data='".serialize($this->loc)."'",
+//            'where' => "location_data='".serialize($this->loc)."'",
+            'where' => $this->aggregateWhereClause(),
 		    'limit'=>25,
             'order'=>'rank',
             'page'=>(isset($this->params['page']) ? $this->params['page'] : 1),
@@ -123,7 +128,7 @@ class faqController extends expController {
     }
     
     public function ask_question() {
-        global $user;
+//        global $user;
         
         expHistory::set('editable', $this->params);
 //        if ($user->isAdmin()) {
@@ -265,9 +270,9 @@ class faqController extends expController {
     }
 
     function addContentToSearch() {
-        global $db, $router;
+//        global $db, $router;
+        global $db;
 
-        //FIXME we should probably allow for a single item update/addition
         $count = 0;
         $model = new $this->basemodel_name(null, false, false);
         $where = (!empty($this->params['id'])) ? 'id='.$this->params['id'] : null;
@@ -279,6 +284,7 @@ class faqController extends expController {
 
                 $origid = $cnt['id'];
                 unset($cnt['id']);
+                //build the search record and save it.
 //                $sql = "original_id=".$origid." AND ref_module='".$this->classname."'";
                 $sql = "original_id=".$origid." AND ref_module='".$this->baseclassname."'";
                 $oldindex = $db->selectObject('search',$sql);

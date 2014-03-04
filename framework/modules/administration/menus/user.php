@@ -18,7 +18,7 @@
 
 if (!defined('EXPONENT')) exit('');
 
-global $user;
+global $user, $db;
 
 /////////////////////////////////////////////////////////////////////////
 // FIGURE OUT IF WE"RE IN PREVIEW MODE OR NOT
@@ -32,25 +32,44 @@ if (expSession::is_set('uilevel')) {
 // BUILD THE MENU
 /////////////////////////////////////////////////////////////////////////
 
-$items = array(
-    array(
+$items = array();
+if (!$user->globalPerm('prevent_profile_change')) {
+    $items[] = array(
         'text'      => gt("Edit My Profile"),
         'url'       => makeLink(array('controller' => 'users', 'action' => 'edituser', 'id' => $user->id)),
         'classname' => 'edit',
-    ),
-    array(
+    );
+}
+
+if ((!USER_NO_PASSWORD_CHANGE || $user->isAdmin()) && !$user->is_ldap) {
+    $items[] = array(
         'text'      => gt("Change My Password"),
         'url'       => makeLink(array('controller' => 'users', 'action' => 'change_password')),
         'classname' => 'password',
-    ),
-    array(
-        'text'      => gt("Log Out"),
-        'url'       => makeLink(array('controller' => 'login', 'action' => 'logout')),
-        'classname' => 'logout',
-    )
+    );
+}
+
+$items[] = array(
+    'text'      => gt("Log Out"),
+    'url'       => makeLink(array('controller' => 'login', 'action' => 'logout')),
+    'classname' => 'logout',
 );
 
-if ($user->isAdmin()) { // must be an admin user to use toggle_preview method
+if (!$user->isAdmin()) {
+    $previewperms = !$db->selectValue('userpermission', 'uid', "uid='" . $user->id . "' AND (permission='manage' OR permission='edit')");
+    if (!$previewperms) {
+        $groups = $user->getGroupMemberships();
+        foreach ($groups as $group) {
+            if (!$previewperms) {
+                $previewperms = !$db->selectValue('grouppermission', 'gid', "gid='" . $group->id . "' AND (permission='manage' OR permission='edit')");
+            } else {
+                break;
+            }
+        }
+    }
+} else $previewperms = true;
+
+if ($previewperms) { // must be an admin user to use toggle_preview method
     $items[] = array(
         'text'      => ($level == UILEVEL_PREVIEW) ? gt('Turn Preview Mode off') : gt('Turn Preview Mode on'),
         'classname' => ($level == UILEVEL_PREVIEW) ? 'preview_on' : 'preview_off',
@@ -66,35 +85,5 @@ return array(
         'itemdata' => $items,
     )
 );
-
-//return array(
-//    'text'=>$user->firstname.' '.$user->lastname,
-//    'classname'=>'quicklink user',
-//    'submenu'=>array(
-//        'id'=>'user',
-//        'itemdata'=>array(
-//            array(
-//                'text'=>gt("Edit My Profile"),
-//                'url'=>makeLink(array('controller'=>'users','action'=>'edituser','id'=>$user->id)),
-//                'classname'=>'edit',
-//            ),
-//            array(
-//                'text'=>gt("Change My Password"),
-//                'url'=>makeLink(array('controller'=>'users','action'=>'change_password')),
-//                'classname'=>'password',
-//            ),
-//            array(
-//                'text'=>gt("Log Out"),
-//                'url'=>makeLink(array('controller'=>'login','action'=>'logout')),
-//                'classname'=>'logout',
-//            ),
-//            array(
-//                'text' => ($level == UILEVEL_PREVIEW)?gt('Turn Preview Mode off'):gt('Turn Preview Mode on'),
-//                'classname' => ($level == UILEVEL_PREVIEW)?'preview_on':'preview_off',
-//				'url' => makeLink(array('controller' => 'administration','action' => 'toggle_preview'))
-//            ),
-//        ),
-//    )
-//);
 
 ?>

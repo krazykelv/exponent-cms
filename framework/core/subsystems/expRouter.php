@@ -215,7 +215,7 @@ class expRouter {
             // check if the URL is looking for a non-existent page or controller (we will check for bad action in renderAction())
             // if page or controller is not found we will route to the not found controller.            
             $_REQUEST['controller'] = 'notfound';
-            $_REQUEST['action'] = 'handle';   
+            $_REQUEST['action'] = 'handle';
         }
     }
 
@@ -233,7 +233,7 @@ class expRouter {
                 $tmpParams[$key] = $value;
             }
         }
-        $trackingObject = new stdClass();  //FIXME php 5.4
+        $trackingObject = new stdClass();
         $trackingObject->params = serialize($tmpParams);
         if ($this->url_type == 'page' || $this->url_type == 'base') {
             $trackingObject->section = $section;
@@ -540,34 +540,41 @@ class expRouter {
         return $url;
     }
 
-    public function printerFriendlyLink($link_text="Printer Friendly", $class=null, $width=800, $height=600, $view='') {
+    public function printerFriendlyLink($link_text="Printer Friendly", $class=null, $width=800, $height=600, $view='', $title_text = "Printer Friendly") {
         $url = '';
         if (PRINTER_FRIENDLY != 1 && EXPORT_AS_PDF != 1) {
             $class = !empty($class) ? $class : 'printer-friendly-link';
             $url =  '<a class="'.$class.'" href="javascript:void(0)" onclick="window.open(\'';
+            if (!empty($_REQUEST['view']) && !empty($view) && $_REQUEST['view'] != $view) {
+                $_REQUEST['view'] = $view;
+            }
             if ($this->url_style == 'sef') {
                 $url .= $this->convertToOldSchoolUrl();
-                $url .= empty($view) ? '' : '&view='.$view;
+                if (empty($_REQUEST['view']) && !empty($view)) $url .= '&view='.$view;
                 if ($this->url_type=='base') $url .= '/index.php?section='.SITE_DEFAULT_SECTION;
             } else {
                 $url .= $this->current_url;
             }
-
             $url .= '&printerfriendly=1\' , \'mywindow\',\'menubar=1,resizable=1,scrollbars=1,width='.$width.',height='.$height.'\');"';
+            $url .= ' title="'.$title_text.'"';
             $url .= '> '.$link_text.'</a>';
+            $url = str_replace('&ajax_action=1','',$url);
         }
         
         return $url; 
     }
 
-    public function exportAsPDFLink($link_text="Export as PDF", $class=null, $width=800, $height=600, $view='', $orientation=false, $limit='') {
+    public function exportAsPDFLink($link_text="Export as PDF", $class=null, $width=800, $height=600, $view='', $orientation=false, $limit='', $title_text="Export as PDF") {
         $url = '';
         if (EXPORT_AS_PDF != 1 && PRINTER_FRIENDLY != 1) {
             $class = !empty($class) ? $class : 'export-pdf-link';
             $url =  '<a class="'.$class.'" href="javascript:void(0)" onclick="window.open(\'';
+            if (!empty($_REQUEST['view']) && !empty($view) && $_REQUEST['view'] != $view) {
+                $_REQUEST['view'] = $view;
+            }
             if ($this->url_style == 'sef') {
                 $url .= $this->convertToOldSchoolUrl();
-                $url .= empty($view) ? '' : '&view='.$view;
+                if (empty($_REQUEST['view']) && !empty($view)) $url .= '&view='.$view;
                 if ($this->url_type=='base') $url .= '/index.php?section='.SITE_DEFAULT_SECTION;
             } else {
                 $url .= $this->current_url;
@@ -579,7 +586,9 @@ class expRouter {
                 $limit = '&limit='.$limit;
             }
             $url .= '&exportaspdf=1'.$orientation.$limit.'&\' , \'mywindow\',\'menubar=1,resizable=1,scrollbars=1,width='.$width.',height='.$height.'\');"';
+            $url .= ' title="'.$title_text.'"';
             $url .= '> '.$link_text.'</a>';
+            $url = str_replace('&ajax_action=1','',$url);
         }
 
         return $url;

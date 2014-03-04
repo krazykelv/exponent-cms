@@ -46,14 +46,19 @@ class user extends expRecord {
         $this->getsToolbar = $this->getsToolbar();
     }
 
+    public function update($params=array()) {
+        if (!isset($params['is_admin'])) $params['is_admin'] = 0;
+        if (!isset($params['is_acting_admin'])) $params['is_acting_admin'] = 0;
+        parent::update($params);
+    }
+
     public function save($overrideUsername = false) {
         global $user;
 
-        if (isset($this->params['is_admin'])) $this->is_admin = $this->params['is_admin'];
-        if (isset($this->params['is_acting_admin'])) $this->is_acting_admin = $this->params['is_acting_admin'];
         // if someone is trying to make this user an admin, lets make sure they have permission to do so.
         if (!empty($this->is_admin) && !$user->isAdmin()) $this->is_admin = 0;
         if (!empty($this->is_acting_admin) && !$user->isAdmin()) $this->is_acting_admin = 0;
+        if (!empty($this->is_admin)) $this->is_acting_admin = 1;
 
         // if the site is configured to use the email addy as the username we need to force the
         // the email address into the username field.
@@ -76,7 +81,7 @@ class user extends expRecord {
         }
         if (USE_LDAP == 1 && (empty($user->id) || $user->is_ldap == 1) && function_exists('ldap_connect')) {
             $ldap = new expLDAP();
-            $ldap->connect();
+//            $ldap->connect();
 //            $authenticated = $ldap->authenticate($ldap->getLdapUserDN($username), $password);
             $authenticated = $ldap->authenticate($username.'@'.LDAP_BASE_DN, $password);
             if ($ldap->errno() && DEVELOPMENT) {
@@ -114,7 +119,8 @@ class user extends expRecord {
     }
 
     public function updateLastLogin() {
-        global $db, $user;
+//        global $db, $user;
+        global $db;
 
         $obj = new stdClass();
         $obj->id = $this->id;
@@ -218,7 +224,8 @@ class user extends expRecord {
     }
 
     public function getGroupMemberships() {
-        global $db, $user;
+//        global $db, $user;
+        global $db;
 
         // Don't have enough information to consult the membership tables. Return an empty array.
         if (!$this->isLoggedIn()) return array();
@@ -238,6 +245,7 @@ class user extends expRecord {
         global $db;
 
         if ($this->isAdmin()) return true;
+        if ($this->globalPerm('hide_slingbar')) return false;
 
         //FIXME who should get a slingbar? any non-view permissions? new group setting?
         // check userpermissions to see if the user has the ability to edit anything
@@ -379,6 +387,57 @@ class user extends expRecord {
         return $SYS_USERS_CACHE[$uid];
     }
 
+    /**
+     * simple function to return the user's attribution based on system setting
+     *
+     * @static
+     *
+     * @param integer $id
+     * @param string  $display
+     *
+     * @return string
+     */
+    public static function getUserAttribution($id, $display=DISPLAY_ATTRIBUTION) {
+        $u = new user($id);
+        if (!empty($u->id)) {
+            switch ($display) {
+             case "firstlast":
+                 $str = $u->firstname . " " . $u->lastname;
+                 break;
+             case "lastfirst":
+                 $str = $u->lastname . ", " . $u->firstname;
+                 break;
+             case "first":
+                 $str = $u->firstname;
+                 break;
+             case "username":
+             default:
+                 $str = $u->username;
+                 break;
+            }
+        } else {
+            $str = gt('Anonymous User');
+        }
+        return $str;
+    }
+
+    /**
+     * This function determines a group global permission/restriction for this user
+     *
+     * @param $perm
+     *
+     * @return bool
+     */
+    public function globalPerm($perm) {
+        if ($this->isAdmin()) return false;
+//        $groups = $this->getGroupMemberships();
+        foreach ($this->groups as $group) {
+            if (!empty($group->$perm)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 ?>

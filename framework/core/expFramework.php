@@ -162,13 +162,19 @@ $expJS = array();
 
 // expCSS
 /**
- * Stores the user's css files
+ * Stores the user's less global variables
+ * @var array $less_vars
+ * @name $less_vars
+ */
+$less_vars = array();
+/**
+ * Stores the user's css files to load first
  * @var array $css_primer
  * @name $css_primer
  */
 $css_primer = array();
 /**
- * Stores the user's css files
+ * Stores the user's css core/system files
  * @var array $css_core
  * @name $css_core
  */
@@ -295,17 +301,19 @@ function renderAction(array $parms=array()) {
     
     // add the $_REQUEST values to the controller <- pb: took this out and passed in the params to the controller constructor above
     //$controller->params = $parms;
-    //check the perms for this action
+    // check the perms for this action
     $perms = $controller->permissions();
     
-    //we have to treat the update permission a little different..it's tied to the create/edit
-    //permissions.  Really the only way this will fail will be if someone bypasses the perm check
-    //on the edit form somehow..like a hacker trying to bypass the form and just submit straight to 
-    //the action. To safeguard, we'll catch if the action is update and change it either to create or
-    //edit depending on whether an id param is passed to. that should be sufficient.
+    // we have to treat the update permission a little different..it's tied to the create/edit
+    // permissions.  Really the only way this will fail will be if someone bypasses the perm check
+    // on the edit form somehow..like a hacker trying to bypass the form and just submit straight to
+    // the action. To safeguard, we'll catch if the action is update and change it either to create or
+    // edit depending on whether an id param is passed to. that should be sufficient.
     $common_action = null;
     if ($parms['action'] == 'update') {
         $perm_action = (!isset($parms['id']) || $parms['id'] == 0) ? 'create' : 'edit';
+    } elseif ($parms['action'] == 'edit' && (!isset($parms['id']) || $parms['id'] == 0)) {
+        $perm_action = 'create';
     } elseif ($parms['action'] == 'saveconfig') {
         $perm_action = 'configure';
     } else {
@@ -318,10 +326,60 @@ function renderAction(array $parms=array()) {
         $perm_action = $parms['action'];
     }
 
+    // Here is where we check for ownership of an item and 'create' perm
+    if (($parms['action'] == 'edit' || $parms['action'] == 'update' || $parms['action'] == 'delete' ||
+        $common_action == 'edit' || $common_action == 'update' || $common_action == 'delete') && !empty($parms['id'])) {
+        $theaction = !empty($common_action) ? $common_action : $parms['action'];
+        $owner = $db->selectValue($model, 'poster', 'id=' . $parms['id']);
+        if ($owner == $user->id && !expPermissions::check($theaction, $controller->loc) && expPermissions::check('create', $controller->loc)) {
+            $perm_action = 'create';
+        }
+    }
+
+    if (!DISABLE_PRIVACY) {
+    // check to see if it's on a private page and we shouldn't see it
+        if ($perm_action == 'showall' || $perm_action == 'show' || $perm_action == 'downloadfile' || $common_action == 'showall' || $common_action == 'show' || $common_action == 'downloadfile') {
+            if (!empty($parms['src'])) {
+                $loc = expCore::makeLocation($parms['controller'], $parms['src']);
+            } elseif (!empty($parms['id']) || !empty($parms['title']) || !empty($parms['sef_url'])) {
+                if (!empty($parms['id'])) {
+                    $record = new $controller->basemodel_name($parms['id']);
+                } elseif (!empty($parms['title'])) {
+                    $record = new $controller->basemodel_name($parms['title']);
+                } elseif (!empty($parms['sef_url'])) {
+                    $record = new $controller->basemodel_name($parms['sef_url']);
+                }
+                if (!empty($record->location_data)) $loc = expUnserialize($record->location_data);
+            }
+            if (!empty($loc)) {
+                $section = new section();
+                $sectionref = new sectionref();
+                $container = new container();
+                $secref = $sectionref->find('first',"module='".$parms['controller']."' AND source='" . $loc->src . "'");
+                if (!empty($secref->section)) {
+                    $page = $section->find('first','id=' . $secref->section);
+                    $module = $container->find('first',"internal='" . serialize($loc) . "'");
+                    if ($page !== null && $module !== null && (empty($page->public) || !empty($module->is_private))) {
+                        if (!expPermissions::check('view',expCore::makeLocation('navigation', $page->id))) {
+                            if (expTheme::inAction()) {
+                                flash('error', gt("You don't have permission to view that item"));
+                                notfoundController::handle_not_authorized();
+                                expHistory::returnTo('viewable');
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (array_key_exists($perm_action, $perms)) {
         if (!expPermissions::check($perm_action, $controller->loc)) {
             if (expTheme::inAction()) {
                 flash('error', gt("You don't have permission to")." ".$perms[$perm_action]);
+                notfoundController::handle_not_authorized();
                 expHistory::returnTo('viewable');
             } else {
                 return false;
@@ -331,6 +389,7 @@ function renderAction(array $parms=array()) {
         if (!expPermissions::check($common_action, $controller->loc)) {
             if (expTheme::inAction()) {
                 flash('error', gt("You don't have permission to")." ".$perms[$common_action]);
+                notfoundController::handle_not_authorized();
                 expHistory::returnTo('viewable');
             } else {
                 return false;
@@ -341,6 +400,7 @@ function renderAction(array $parms=array()) {
         if (!$user->isLoggedIn()) {
             $msg = empty($controller->requires_login[$perm_action]) ? gt("You must be logged in to perform this action") : $controller->requires_login[$perm_action];
             flash('error', $msg);
+            notfoundController::handle_not_authorized();
             expHistory::redirecto_login();
         }
     } elseif (array_key_exists($common_action, $controller->requires_login)) {
@@ -348,6 +408,7 @@ function renderAction(array $parms=array()) {
         if (!$user->isLoggedIn()) {
             $msg = empty($controller->requires_login[$common_action]) ? gt("You must be logged in to perform this action") : $controller->requires_login[$common_action];
             flash('error', $msg);
+            notfoundController::handle_not_authorized();
             expHistory::redirecto_login();
         }
     } 
@@ -447,20 +508,38 @@ function get_model_for_controller($controller_name) {
 }
 
 function get_common_template($view, $loc, $controllername='') {
+    $framework = expSession::get('framework');
+
     $controller = new stdClass();
     $controller->baseclassname = empty($controllername) ? 'common' : $controllername;
-    $controller->relative_viewpath = 'framework/modules-1/common/views'.$controller->baseclassname;  //FIXME this don't make sense?
+//    $controller->relative_viewpath = 'framework/modules-1/common/views'.$controller->baseclassname;  //FIXME this don't make sense?
     $controller->loc = $loc;
     
+    $bstrapbasepath = BASE.'framework/modules/common/views/'.$controllername.'/'.$view.'.bootstrap.tpl';
     $basepath = BASE.'framework/modules/common/views/'.$controllername.'/'.$view.'.tpl';
+    $bstrapthemepath = BASE.'themes/'.DISPLAY_THEME.'/modules/common/views/'.$controllername.'/'.$view.'.bootstrap.tpl';
     $themepath = BASE.'themes/'.DISPLAY_THEME.'/modules/common/views/'.$controllername.'/'.$view.'.tpl';
 
-    if (file_exists($themepath)) {
-        return new controllertemplate($controller,$themepath);
-    } elseif(file_exists($basepath)) {
-        return new controllertemplate($controller,$basepath);
+    if ($framework!="bootstrap") {
+        if (file_exists($themepath)) {
+            return new controllertemplate($controller,$themepath);
+        } elseif(file_exists($basepath)) {
+            return new controllertemplate($controller,$basepath);
+        } else {
+            return new controllertemplate($controller, BASE.'framework/modules/common/views/scaffold/blank.tpl');
+        }
     } else {
-        return new controllertemplate($controller, BASE.'framework/modules/common/views/scaffold/blank.tpl');
+        if (file_exists($bstrapthemepath)) {
+            return new controllertemplate($controller, $bstrapthemepath);
+        } elseif (file_exists($themepath)) {
+            return new controllertemplate($controller, $themepath);
+        } elseif (file_exists($bstrapbasepath)) {
+            return new controllertemplate($controller, $bstrapbasepath);
+        } elseif (file_exists($basepath)) {
+            return new controllertemplate($controller, $basepath);
+        } else {
+            return new controllertemplate($controller, BASE.'framework/modules/common/views/scaffold/blank.tpl');
+        }
     }
 }
 
@@ -472,7 +551,7 @@ function get_common_template($view, $loc, $controllername='') {
  * @return array
  */
 function get_config_templates($controller, $loc) {
-    global $db;
+//    global $db;
     
     // set paths we will search in for the view
     $commonpaths = array(
@@ -539,17 +618,21 @@ function get_config_templates($controller, $loc) {
  * @return array
  */
 function find_config_views($paths=array(), $excludes=array()) {
+    $framework = expSession::get('framework');
     $views = array();
     foreach ($paths as $path) {
         if (is_readable($path)) {
             $dh = opendir($path);
             while (($file = readdir($dh)) !== false) {
-                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl') {
+                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl' && substr($file, -14) != '.bootstrap.tpl') {
                     $filename = substr($file, 0, -4);
                     if (!in_array($filename, $excludes)) {
                         $fileparts = explode('_', $filename);
                         $views[$filename]['name'] = ucwords(implode(' ', $fileparts));
                         $views[$filename]['file'] = $path.'/'.$file;
+                        if ($framework == 'bootstrap' && file_exists($path.'/'.$filename.'.bootstrap.tpl')) {
+                            $views[$filename]['file'] = $path.'/'.$filename.'.bootstrap.tpl';
+                        }
                     }
                 }
             }
@@ -638,7 +721,7 @@ function get_action_views($ctl, $action, $human_readable) {
         if (is_readable($path)) {
             $dh = opendir($path);
             while (($file = readdir($dh)) !== false) {
-                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl') {
+                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl' && substr($file, -14) != '.bootstrap.tpl') {
                     $filename = substr($file, 0, -4);
                     $fileparts = explode('_', $filename);
                     if ($fileparts[0] == $action) {
@@ -677,7 +760,7 @@ function get_filedisplay_views() {
         if (is_readable($path)) {
             $dh = opendir($path);
             while (($file = readdir($dh)) !== false) {
-                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl') {
+                if (is_readable($path.'/'.$file) && substr($file, -4) == '.tpl' && substr($file, -14) != '.bootstrap.tpl') {
                     $filename = substr($file, 0, -4);
                     $views[$filename] = gt($filename);
                 }
@@ -713,8 +796,22 @@ function expUnserialize($serial_str) {
         eDebug('problem:<br>'.$out.'<br>'.$out1);
     }
     $out2 = unserialize($out);
-    if (is_array($out2) && !empty($out2['moduledescription'])) {  // work-around for links in module descriptions
-        $out2['moduledescription'] = stripslashes($out2['moduledescription']);
+    if (is_array($out2)) {
+        if (!empty($out2['moduledescription'])) {  // work-around for links in module descriptions
+            $out2['moduledescription'] = stripslashes($out2['moduledescription']);
+        }
+        if (!empty($out2['description'])) {  // work-around for links in forms descriptions
+            $out2['description'] = stripslashes($out2['description']);
+        }
+        if (!empty($out2['report_desc'])) {  // work-around for links in forms report descriptions
+            $out2['report_desc'] = stripslashes($out2['report_desc']);
+        }
+        if (!empty($out2['response'])) {  // work-around for links in forms response
+            $out2['response'] = stripslashes($out2['response']);
+        }
+        if (!empty($out2['auto_respond_body'])) {  // work-around for links in forms auto respond
+            $out2['auto_respond_body'] = stripslashes($out2['auto_respond_body']);
+        }
     } elseif (is_object($out2) && get_class($out2) == 'htmlcontrol') {
         $out2->html = stripslashes($out2->html);
     }

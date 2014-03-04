@@ -22,9 +22,9 @@
     {$myloc=serialize($__loc)}
     {permissions}
     <div class="item-actions">
-        {if $permissions.edit == 1}
+        {if $permissions.edit || ($permissions.create && $record->poster == $user->id)}
             {if $myloc != $record->location_data}
-                {if $permissions.manage == 1}
+                {if $permissions.manage}
                     {icon action=merge id=$record->id title="Merge Aggregated Content"|gettext}
                 {else}
                     {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -36,9 +36,9 @@
     {/permissions}
     {if $imgtot}
         <div class="next-prev">
-            <a href="{link action=show id=$previous}">{"Previous Image"|gettext}</a>
+            <a href="{link action=show id=$record->prev}">{"Previous Image"|gettext}</a>
              | {$imgnum} {"of"|gettext} {$imgtot}|
-            <a href="{link action=show id=$next}">{"Next Image"|gettext}</a>
+            <a href="{link action=show id=$record->next}">{"Next Image"|gettext}</a>
         </div>
     {/if}
     {tags_assigned record=$record}

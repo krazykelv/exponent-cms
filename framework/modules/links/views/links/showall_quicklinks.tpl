@@ -21,10 +21,10 @@
     {if $moduletitle && !($config.hidemoduletitle xor $smarty.const.INVERT_HIDE_TITLE)}<h2>{$moduletitle}</h2>{/if}
     {permissions}
         <div class="module-actions">
-			{if $permissions.create == 1 || $permissions.edit == 1}
+			{if $permissions.create}
 				{icon class=add action=edit text="Add a new link"|gettext}
 			{/if}
-			{if $permissions.manage == 1}
+			{if $permissions.manage}
                 {if $config.usecategories}
                     {icon controller=expCat action=manage model='links' text="Manage Categories"|gettext}
                 {/if}
@@ -46,15 +46,15 @@
             {/if}
             <ul>
             {foreach name=links from=$cat->records item=item}
-                <li{if $smarty.foreach.links.last} class="item last"{/if}>
+                <li class="item{if $smarty.foreach.links.last} last{/if}">
                     <div class="link">
                         <a class="{$cat->color}" href="{$item->url}" {if $item->new_window == 1} target="_blank"{/if} title="{$item->body|summarize:"html":"para"}">{$item->title}</a>
                     </div>
                     {permissions}
                         <div class="item-actions">
-                            {if $permissions.edit == 1}
+                            {if $permissions.edit || ($permissions.create && $item->poster == $user->id)}
                                 {if $myloc != $item->location_data}
-                                    {if $permissions.manage == 1}
+                                    {if $permissions.manage}
                                         {icon action=merge id=$item->id title="Merge Aggregated Content"|gettext}
                                     {else}
                                         {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -62,7 +62,7 @@
                                 {/if}
                                 {icon action=edit record=$item}
                             {/if}
-                            {if $permissions.delete == 1}
+                            {if $permissions.delete || ($permissions.create && $item->poster == $user->id)}
                                 {icon action=delete record=$item}
                             {/if}
                         </div>
@@ -78,22 +78,22 @@
     {else}
         <ul>
             {foreach name=items from=$items item=item name=links}
-                <li{if $smarty.foreach.links.last} class="item last"{/if}>
+                <li class="item{if $smarty.foreach.links.last} last{/if}">
                     <a class="link" {if $item->new_window}target="_blank"{/if} href="{$item->url}" title="{$item->body|summarize:"html":"para"}">{$item->title}</a>
                     {permissions}
                         <div class="item-actions">
-                            {if $permissions.edit == 1}
+                            {if $permissions.edit || ($permissions.create && $item->poster == $user->id)}
                                 {if $myloc != $item->location_data}
-                                    {if $permissions.manage == 1}
-                                        {icon action=merge id=$item->id title="merge Aggregated Content"|gettext}
+                                    {if $permissions.manage}
+                                        {icon img='arrow_merge.png' action=merge id=$item->id title="Merge Aggregated Content"|gettext}
                                     {else}
                                         {icon img='arrow_merge.png' title="Merged Content"|gettext}
                                     {/if}
                                 {/if}
-                                {icon action=edit record=$item}
+                                {icon action=edit text='notext' record=$item}
                             {/if}
-                            {if $permissions.delete == 1}
-                                {icon action=delete record=$item}
+                            {if $permissions.delete || ($permissions.create && $item->poster == $user->id)}
+                                {icon action=delete text='notext' record=$item}
                             {/if}
                         </div>
                     {/permissions}

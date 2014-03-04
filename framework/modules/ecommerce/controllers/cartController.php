@@ -25,8 +25,6 @@ class cartController extends expController {
     public $basemodel_name = 'order';
     private $checkout_steps = array('productinfo', 'specials', 'form', 'wizards', 'newsletter', 'confirmation', 'postprocess');
 
-    //public $useractions = array('show'=>'Display Cart');
-
     static function displayname() {
         return gt("e-Commerce Shopping Cart");
     }
@@ -111,7 +109,7 @@ class cartController extends expController {
         //$this->params['qty'] = 1; //REMOVE ME
         if ($product->addToCart($this->params)) {
             if (ecomconfig::getConfig('show_cart') || !empty($this->params['quick'])) {
-                global $order;
+//                global $order;
 //                $order->calculateGrandTotal();
 //                if (!$order->grand_total && !$order->shipping_required) {
 //                    redirect_to(array('controller'=>'cart', 'action'=>'quickConfirm'));
@@ -254,6 +252,7 @@ class cartController extends expController {
 
     function show() {
         global $order;
+
         //$cartinfo->''ecomconfig::getConfig('email_invoice')
         //$back = expHistory::getLast('viewable');
         //eDebug(new expHistory);
@@ -551,7 +550,9 @@ class cartController extends expController {
     }
 
     public function confirm() {
-        global $order, $user, $db;
+//        global $order, $user, $db;
+        global $order;
+
         //eDebug($this->params);
         if (empty($order->orderitem)) flashAndFlow('error',gt('There are no items in your cart.'));
 
@@ -589,7 +590,8 @@ class cartController extends expController {
     }
 
     public function process() {
-        global $db, $order, $user;
+//        global $db, $order, $user;
+        global $order, $user;
 
         //eDebug($order,true);
         if (!$user->isLoggedIn() && empty($this->params['nologin'])) {
@@ -618,7 +620,8 @@ class cartController extends expController {
         // call the billing calculators process method - this will handle saving the billing options to the database.
 //        if (!($order->total == 0 && empty($order->shippingmethods))) {
         if ($billing->calculator != null) {
-            $result = $billing->calculator->process($billing->billingmethod, expSession::get('billing_options'), $this->params, $invNum);
+//            $result = $billing->calculator->process($billing->billingmethod, expSession::get('billing_options'), $this->params, $invNum);
+            $result = $billing->calculator->process($billing->billingmethod, expSession::get('billing_options'), $this->params, $order);
         } else {
             $opts = expSession::get('billing_options');
             $object = new stdClass();
@@ -652,9 +655,6 @@ class cartController extends expController {
 
             // get the first order status and set it for this order
             $order->update(array('invoice_id'=> $invNum, 'purchased'=> time(), 'updated'=> time(), 'comment'=> serialize($comment))); //FIXME $comment doesn't exist
-            if (!$order->shipping_required) {
-                $order->update(array('shipped'=> -1));
-            }
             //$order->setDefaultStatus(); --FJD?
             //$order->setDefaultOrderType(); --FJD?
             $order->refresh();
@@ -946,7 +946,9 @@ class cartController extends expController {
     }
 
     function createaddress() {
-        global $db, $user;
+//        global $db, $user;
+        global $user;
+
         if ($user->isLoggedIn()) {
             // save the address, make it default if it is the users first one
             $address = new address();
@@ -1006,7 +1008,8 @@ class cartController extends expController {
      }   */
 
     function addDiscountToCart() {
-        global $user, $order;
+//        global $user, $order;
+        global $order;
         //lookup discount to see if it's real and valid, and not already in our cart
         //this will change once we allow more than one coupon code
 

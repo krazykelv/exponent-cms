@@ -46,7 +46,7 @@
             </p>
         {/if}
         <h1>{$record->title}</h1>
-        {printer_friendly_link}{export_pdf_link prepend='&#160;&#160;|&#160;&#160;'}
+        {printer_friendly_link view='show'}{export_pdf_link view='show' prepend='&#160;&#160;|&#160;&#160;'}
         {subscribe_link prepend='<br />'}
         {$myloc=serialize($__loc)}
         {if !$config.datetag}
@@ -55,9 +55,9 @@
         {tags_assigned record=$record}
         {permissions}
             <div class="item-actions">
-                {if $permissions.edit == true}
+                {if $permissions.edit || ($permissions.create && $record->poster == $user->id)}
                     {if $myloc != $record->location_data}
-                        {if $permissions.manage == 1}
+                        {if $permissions.manage}
                             {icon action=merge id=$record->id title="Merge Aggregated Content"|gettext}
                         {else}
                             {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -65,7 +65,7 @@
                     {/if}
                     {icon action=edit record=$record}
                 {/if}
-                {if $permissions.delete == true}
+                {if $permissions.delete || ($permissions.create && $record->poster == $user->id)}
                     {icon action=delete record=$record}
                 {/if}
             </div>
@@ -79,6 +79,22 @@
                 {filedisplayer view="`$config.filedisplay`" files=$record->expFile record=$record}
             {/if}
         </div>
+        {if $config.enable_tweet}
+            <a href="https://twitter.com/share" class="twitter-share-button" data-url="{link action=show title=$record->sef_url}" data-text="{$record->title}"{if $config.layout} data-count="{$config.layout}"{/if}{if $config.size} data-size="{$config.size}"{/if} data-lang="en">{'Tweet'|gettext}</a>
+            {script unique='tweet_src'}
+            {literal}
+                !function(d,s,id){
+                    var js,fjs=d.getElementsByTagName(s)[0];
+                    if(!d.getElementById(id)){
+                        js=d.createElement(s);
+                        js.id=id;
+                        js.src="https://platform.twitter.com/widgets.js";
+                        fjs.parentNode.insertBefore(js,fjs);
+                    }
+                }(document,"script","twitter-wjs");
+            {/literal}
+            {/script}
+        {/if}
         {clear}
     </div>
     {if ($record->prev || $record->next) && ($config.pagelinks == "Top and Bottom" || $config.pagelinks == "Bottom Only")}

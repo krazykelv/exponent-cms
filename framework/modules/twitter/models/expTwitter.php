@@ -23,6 +23,18 @@
 class expTwitter extends Twitter {
 
     /**
+     * Default constructor
+     *
+     * @param string $consumerKey    The consumer key to use.
+     * @param string $consumerSecret The consumer secret to use.
+     */
+	public function __construct($consumerKey='', $consumerSecret='')
+    {
+        $this->setConsumerKey($consumerKey);
+        $this->setConsumerSecret($consumerSecret);
+    }
+
+    /**
      * Make the call
      *
      * @param  string $url           The url to call.
@@ -39,14 +51,16 @@ class expTwitter extends Twitter {
         $url, array $parameters = null, $authenticate = false, $method = 'GET',
         $filePath = null, $expectJSON = true, $returnHeaders = false
     ) {
-        // wrap the call in a try/catch to prevent exception fault killing page
+         global $user;
+
+       // wrap the call in a try/catch to prevent exception fault killing page
         try {
             return parent::doCall(
                 $url, $parameters, $authenticate, $method,
                 $filePath, $expectJSON, $returnHeaders
             );
         } catch (Exception $e) {
-            flash('error', 'Twitter: ' . $e->getMessage());
+            if ($user->isAdmin()) flash('error', 'Twitter: ' . $e->getMessage());
         }
 
     }

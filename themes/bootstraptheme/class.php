@@ -24,7 +24,7 @@ class bootstraptheme extends theme {
 
 	function name() { return "Twitter Bootstrap Theme"; }
 	function author() { return "David Leffler"; }
-	function description() { return "An HTML5 responsive grids theme based on <a href=\"http://http://twitter.github.com/bootstrap/\" target=\"_blank\">Twitter Bootstrap</a>"; }
+	function description() { return "An HTML5 responsive grids theme based on <a href=\"http://http://twitter.github.com/bootstrap/\" target=\"_blank\">Twitter Bootstrap v 2</a>"; }
 
     function configureTheme() {
    		//BOOTSTRAP SWATCHES
@@ -67,6 +67,10 @@ class bootstraptheme extends theme {
    		$form->register('swatch',gt('Theme Style').': ',new dropdowncontrol($settings['SWATCH'],$swatches));
         $form->register('btn_size',gt('Button Size').': ',new dropdowncontrol($settings['BTN_SIZE'],$icon_sizes));
         $form->register('menu_location',gt('Menu Location').': ',new dropdowncontrol($settings['MENU_LOCATION'],$menu_locations));
+        if (empty($settings['MENU_HEIGHT'])) $settings['MENU_HEIGHT'] = 1;
+        $form->register('menu_height',gt('Fixed Menu Height Adjustment').': ',new textcontrol($settings['MENU_HEIGHT'],3,false,'integer'));
+        if (empty($settings['MENU_HEIGHT'])) $settings['MENU_HEIGHT'] = 979;
+        $form->register('menu_width',gt('Mobile Menu Collapse Width').': ',new textcontrol($settings['MENU_WIDTH'],4,false,'integer'));
         $form->register('menu_align',gt('Menu Alignment').': ',new dropdowncontrol($settings['MENU_ALIGN'],$menu_alignments));
    		$form->register('submit','',new buttongroupcontrol(gt('Save'),'',gt('Cancel')));
    		assign_to_template(array(
@@ -78,6 +82,7 @@ class bootstraptheme extends theme {
     function saveThemeConfig ($params) {
    		if (empty($params['swatch'])) $params['swatch'] = "''";
         if (empty($params['btn_size'])) $params['btn_size'] = "''";
+        if (empty($params['menu_height'])) $params['menu_height'] = "1";
         parent::saveThemeConfig($params);
    	}
 

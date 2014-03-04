@@ -23,7 +23,6 @@
 
 class fileController extends expController {
     public $basemodel_name = "expFile";
-    //public $useractions = array('showall'=>'Show all');
     public $add_permissions = array(
 //        'picker'=>'Manage Files',
         'import'=>'Import',
@@ -60,7 +59,7 @@ class fileController extends expController {
     }
     
     public function picker() {
-        global $user;
+//        global $user;
 
         $expcat = new expCat();
         $cats = $expcat->find('all','module="file"');
@@ -91,7 +90,7 @@ class fileController extends expController {
         global $user;
         //expHistory::set('manageable', $this->params);
         flash('message',gt('Upload size limit').': '.ini_get('upload_max_filesize'));
-        if(intval(ini_get('upload_max_filesize'))!=intval(ini_get('post_max_size')) && $user->is_admin){
+        if(intval(ini_get('upload_max_filesize'))!=intval(ini_get('post_max_size')) && $user->isAdmin()){
             flash('error',gt('In order for the uploader to work correctly, \'"post_max_size\' and \'upload_max_filesize\' within your php.ini file must match one another'));
         }
 
@@ -99,7 +98,7 @@ class fileController extends expController {
         $cats = $expcat->find('all','module="file"');
         $catarray = array();
         $catarray[] = 'Root Folder';
-        foreach ($cats as $key=>$cat) {
+        foreach ($cats as $cat) {
             $catarray[$cat->id] = $cat->title;
         }
         assign_to_template(array(
@@ -141,6 +140,7 @@ class fileController extends expController {
     public function get_module_view_config() {
         global $template;
 
+        $framework = expSession::get('framework');
         $controller = new $this->params['mod'];
         // set paths we will search in for the view
         $paths = array(
@@ -154,6 +154,12 @@ class fileController extends expController {
         foreach ($paths as $path) {
             $view = $path.'/'.$this->params['view'].'.config';
             if (is_readable($view)) {
+                if ($framework == 'bootstrap') {
+                    $bstrapview = substr($view,0,-6).'bootstrap.config';
+                    if (file_exists($bstrapview)) {
+                        $view = $bstrapview;
+                    }
+                }
                 $template = new controllertemplate($this, $view);
                 $config_found = true;
             }
@@ -173,7 +179,8 @@ class fileController extends expController {
     } 
 
     public function getFilesByJSON() {
-        global $db,$user;
+//        global $db,$user;
+        global $user;
 
         $modelname = $this->basemodel_name;
         $results = 25; // default get all
@@ -214,17 +221,18 @@ class fileController extends expController {
 
         if (isset($this->params['query'])) {
 
-            if ($user->is_acting_admin!=1) {
+            if (!$user->isAdmin()) {
                 $filter = "(poster=".$user->id." OR shared=1) AND ";
             };
-            if ($this->params['fck']==1) {
+//            if ($this->params['update']=='ck' || $this->params['update']=='tiny') {
+            if (!empty($this->params['filter']) && $this->params['filter'] == 'image') {
                 $filter .= "is_image=1 AND ";
             }
 
 //            $this->params['query'] = expString::sanitize($this->params['query']);
 //            $totalrecords = $this->$modelname->find('count',"filename LIKE '%".$this->params['query']."%' OR title LIKE '%".$this->params['query']."%' OR alt LIKE '%".$this->params['query']."%'");
 //            $files = $this->$modelname->find('all',$filter."filename LIKE '%".$this->params['query']."%' OR title LIKE '%".$this->params['query']."%' OR alt LIKE '%".$this->params['query']."%'".$imagesOnly,$sort.' '.$dir, $results, $startIndex);
-            $files = $this->$modelname->find('all',$filter."filename LIKE '%".$this->params['query']."%' OR title LIKE '%".$this->params['query']."%' OR alt LIKE '%".$this->params['query']."%'".$imagesOnly,$sort.' '.$dir);
+            $files = $this->$modelname->find('all',$filter."(filename LIKE '%".$this->params['query']."%' OR title LIKE '%".$this->params['query']."%' OR alt LIKE '%".$this->params['query']."%')",$sort.' '.$dir);
 
             //FiXME we need to get all records then group by cat, then trim/paginate
             $querycat = !empty($this->params['cat']) ? $this->params['cat'] : '0';
@@ -259,17 +267,18 @@ class fileController extends expController {
                 'records'=>$files
             );
         } else {
-            if ($user->is_acting_admin!=1) {
+            if (!$user->isActingAdmin()) {
                 $filter = "(poster=".$user->id." OR shared=1)";
             };
-            if ($this->params['fck']==1) {
+//            if ($this->params['update']=='ck' || $this->params['update']=='tiny') {
+            if (!empty($this->params['filter']) && $this->params['filter'] == 'image') {
                 $filter .= !empty($filter) ? " AND " : "";
                 $filter .= "is_image=1";
             }
             
 //            $totalrecords = $this->$modelname->find('count',$filter);
 //            $files = $this->$modelname->find('all',$filter,$sort.' '.$dir, $results, $startIndex);
-            $files = $this->$modelname->find('all',$filter,$sort.' '.$dir);
+            $files = $this->$modelname->find('all', $filter, $sort.' '.$dir);
 
             $groupedfiles = array();
             foreach ($files as $key=>$file) {
@@ -322,7 +331,7 @@ class fileController extends expController {
             $cats = $expcat->find('all','module="file"','rank');
             $catarray = array();
             $catarray[] = 'Root Folder';
-            foreach ($cats as $key=>$cat) {
+            foreach ($cats as $cat) {
                 $catarray[$cat->id] = $cat->title;
             }
             echo json_encode($catarray);
@@ -330,7 +339,9 @@ class fileController extends expController {
     }
 
     public function delete() {
-        global $db,$user;
+//        global $db,$user;
+        global $user;
+
         $file = new expFile($this->params['id']);
         if ($user->id==$file->poster || $user->isAdmin()) {
             $file->delete();
@@ -342,15 +353,15 @@ class fileController extends expController {
         } else {
             flash('error',$file->filename.' '.gt('wasn\'t deleted because you don\'t own the file.'));
         }
-        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"fck"=>$this->params['fck']));
+        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"filter"=>$this->params['filter']));
     } 
     
     public function deleter() {
-        global $db;
+//        global $db;
 
         $notafile = array();
-        $files = $db->selectObjects('expFiles',1);
-        foreach ($files as $file) {
+//        $files = $db->selectObjects('expFiles',1);
+        foreach (expFile::selectAllFiles() as $file) {
             if (!is_file($file->directory.$file->filename)) {
                 $notafile[$file->id] = $file;
             }
@@ -371,7 +382,7 @@ class fileController extends expController {
                 }
             }
         }
-        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"fck"=>$this->params['fck']));
+        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"filter"=>$this->params['filter']));
     }
 
     public function batchDelete() {
@@ -381,7 +392,7 @@ class fileController extends expController {
         $error = false;
         foreach ($files as $file) {
             $delfile = new expFile($file->id);
-            if ($user->id==$delfile->poster || $user->is_acting_admin==1) {
+            if ($user->id==$delfile->poster || $user->isActingAdmin()) {
                 $delfile->delete();
                 unlink($delfile->directory.$delfile->filename);
             } else {
@@ -404,10 +415,11 @@ class fileController extends expController {
         foreach ($allfiles as $path=>$file) {
             if ($file[0] != '.') {
                 $found = false;
-                $dbfiles = $db->selectObjects('expFiles',"filename='".$file."'");
-                foreach ($dbfiles as $dbfile) {
-                    $found = ($dbfile->directory == str_replace($file,'',$path));
-                }
+//                $dbfiles = $db->selectObjects('expFiles',"filename='".$file."'");
+                $dbfile = $db->selectObject('expFiles',"filename='".$file."'");
+//                foreach ($dbfiles as $dbfile) {
+                    if (!empty($dbfile)) $found = ($dbfile->directory == str_replace($file,'',$path));
+//                }
                 if (!$found) {
                     $notindb[$path] = $file;
                 }
@@ -426,7 +438,7 @@ class fileController extends expController {
             $newfile->save();
             flash('message',$newfile->filename.' '.gt('was added to the File Manager.'));
         }
-        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"fck"=>$this->params['fck']));
+        redirect_to(array("controller"=>'file',"action"=>'picker',"ajax_action"=>1,"update"=>$this->params['update'],"filter"=>$this->params['filter']));
     }
 
     public function upload() {
@@ -462,7 +474,8 @@ class fileController extends expController {
                 echo gt('File saved');
             }
         } else {
-            flash('error',gt('File was not uploaded!'));
+            echo gt('File was NOT uploaded!');
+//            flash('error',gt('File was not uploaded!'));
         }
     } 
 
@@ -471,9 +484,20 @@ class fileController extends expController {
 
         //extensive suitability check before doing anything with the file...
         if (isset($_SERVER['HTTP_X_FILE_NAME'])) {  //HTML5 XHR upload
-            $file = expFile::fileXHRUpload($_SERVER['HTTP_X_FILE_NAME']);
+            $file = expFile::fileXHRUpload($_SERVER['HTTP_X_FILE_NAME'],false,false,null,null,intval(QUICK_UPLOAD_WIDTH));
+            $file->poster = $user->id;
             $file->posted = $file->last_accessed = time();
             $file->save();
+            if (defined('QUICK_UPLOAD_FOLDER') && QUICK_UPLOAD_FOLDER != '') {
+                $quikFolder = QUICK_UPLOAD_FOLDER;
+            } else {
+                $quikFolder = null;
+            }
+            if (!empty($quikFolder)) {
+                $expcat = new expCat($quikFolder);
+                $params['expCat'][0] = $expcat->id;
+                $file->update($params);
+            }
             $ar = new expAjaxReply(200, gt('Your File was uploaded successfully'), $file->id);
             $ar->send();
         } else {  //$_POST upload
@@ -487,7 +511,7 @@ class fileController extends expController {
                 $message = gt("You may be attempting to hack our server.");
             } else {
                 // upload the file, but don't save the record yet...
-                $file = expFile::fileUpload('uploadfile',false,false);
+                $file = expFile::fileUpload('uploadfile',false,false,null,null,intval(QUICK_UPLOAD_WIDTH));
                 // since most likely this function will only get hit via flash in YUI Uploader
                 // and since Flash can't pass cookies, we lose the knowledge of our $user
                 // so we're passing the user's ID in as $_POST data. We then instantiate a new $user,
@@ -496,6 +520,11 @@ class fileController extends expController {
                     $file->poster = $user->id;
                     $file->posted = $file->last_accessed = time();
                     $file->save();
+                    if (!empty($quikFolder)) {
+                        $expcat = new expCat($quikFolder);
+                        $params['expCat'][0] = $expcat->id;
+                        $file->update($params);
+                    }
                     $ar = new expAjaxReply(200, gt('Your File was uploaded successfully'), $file->id);
                 } else {
                     $ar = new expAjaxReply(300, gt("File was not uploaded!").' - '.$file);
@@ -508,7 +537,7 @@ class fileController extends expController {
     public function editCat() {
         global $user;
         $file = new expFile($this->params['id']);
-        if ($user->id==$file->poster || $user->is_acting_admin==1) {
+        if ($user->id==$file->poster || $user->isActingAdmin()) {
             $expcat = new expCat($this->params['newValue']);
             $params['expCat'][0] = $expcat->id;
             $file->update($params);
@@ -524,7 +553,7 @@ class fileController extends expController {
     public function editTitle() {
         global $user;
         $file = new expFile($this->params['id']);
-        if ($user->id==$file->poster || $user->is_acting_admin==1) {
+        if ($user->id==$file->poster || $user->isActingAdmin()) {
             $file->title = $this->params['newValue'];
             $file->save();
             $ar = new expAjaxReply(200, gt('Your title was updated successfully'), $file);
@@ -537,7 +566,7 @@ class fileController extends expController {
     public function editAlt() {
         global $user;        
         $file = new expFile($this->params['id']);
-        if ($user->id==$file->poster || $user->is_acting_admin==1) {
+        if ($user->id==$file->poster || $user->isActingAdmin()) {
             $file->alt = $this->params['newValue'];
             $file->save();
             $ar = new expAjaxReply(200, gt('Your alt was updated successfully'), $file);
@@ -554,7 +583,7 @@ class fileController extends expController {
 		if(!isset($this->params['newValue'])) {
 			$this->params['newValue'] = 0;
 		}
-        if ($user->id==$file->poster || $user->is_acting_admin==1) {
+        if ($user->id==$file->poster || $user->isActingAdmin()) {
             $file->shared = $this->params['newValue'];
             $file->save();
             $ar = new expAjaxReply(200, gt('This file is now shared.'), $file);
@@ -566,17 +595,6 @@ class fileController extends expController {
     }
 
     public function import_eql() {
-        $form = new form();
-        $form->meta('controller','file');
-        $form->meta('action','import_eql_process');
-
-        $form->register('file',gt('EQL File'),new uploadcontrol());
-        //$form->register('select_tables',gt('Select Specific Tables?'), new checkboxcontrol(false));
-        $form->register('submit','',new buttongroupcontrol(gt('Restore'),'','','uploadfile'));
-
-        assign_to_template(array(
-            'form_html' => $form->toHTML(),
-        ));
     }
 
     public  function import_eql_process() {
@@ -584,7 +602,6 @@ class fileController extends expController {
 
         $errors = array();
         expSession::clearAllUsersSessionCache();
-        expSession::clearCurrentUserSessionCache();
 
         // copy in deprecated definitions files to aid in import
         $src = BASE."install/old_definitions";
@@ -609,6 +626,11 @@ class fileController extends expController {
             while(false !== ( $file = readdir($dir)) ) {
                 if (($file != '.') && ($file != '..')) {
                     if (file_exists($dst . '/' . $file)) unlink($dst . '/' . $file);
+                    // remove empty deprecated tables
+                    $table = substr($file,0,-4);
+                    if ($db->tableIsEmpty($table)) {
+                        $db->dropTable($table);
+                    }
                 }
             }
             closedir($dir);
@@ -697,15 +719,6 @@ class fileController extends expController {
     }
 
     public function import_files() {
-        $form = new form();
-        $form->meta('controller','file');
-        $form->meta('action','import_files_process');
-        $form->register('file',gt('Files Archive'),new uploadcontrol());
-        $form->register('submit','',new buttongroupcontrol(gt('Restore'),'','','uploadfile'));
-
-        assign_to_template(array(
-            'form_html' => $form->toHTML(),
-        ));
     }
 
     public function import_files_process() {
@@ -737,7 +750,7 @@ class fileController extends expController {
         		if (!$return) {
         			echo '<br />'.gt('Error extracting TAR archive').'<br />';
         		} else if (!file_exists($dest_dir.'/files') || !is_dir($dest_dir.'/files')) {
-        			echo '<br />'.gt('Invalid archive format').'<br />';
+        			echo '<br />'.gt('Invalid archive format, no \'/files\' folder').'<br />';
         		} else {
         			// Show the form for specifying which mod types to 'extract'
 
@@ -834,7 +847,7 @@ class fileController extends expController {
     }
 
     public function export_files_process() {
-        global $db;
+//        global $db;
 
         //if (!isset($this->params['mods'])) {
         //	echo gt('You must select at least one module to export files for.');
@@ -846,9 +859,10 @@ class fileController extends expController {
         $files = array();
         //foreach (array_keys($this->params['mods']) as $mod) {
         //	foreach ($db->selectObjects('file',"directory LIKE 'files/".$mod."%'") as $file) {
-            foreach ($db->selectObjects('expFiles',1) as $file) {
-                $files[] = BASE.$file->directory.'/'.$file->filename;
-            }
+//            foreach ($db->selectObjects('expFiles',1) as $file) {
+        foreach (expFile::selectAllFiles() as $file) {
+            $files[] = BASE.$file->directory.$file->filename;
+        }
         //}
 
         $fname = tempnam(BASE.'/tmp','exporter_files_');

@@ -74,9 +74,9 @@
     </div>
     {permissions}
         <div class="item-actions">
-            {if $permissions.edit == 1}
+            {if $permissions.edit || ($permissions.create && $file->poster == $user->id)}
                 {if $myloc != $file->location_data}
-                    {if $permissions.manage == 1}
+                    {if $permissions.manage}
                         {icon action=merge id=$file->id title="Merge Aggregated Content"|gettext}
                     {else}
                         {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -84,7 +84,7 @@
                 {/if}
                 {icon action=edit record=$file title="Edit this file"|gettext}
             {/if}
-            {if $permissions.delete == 1}
+            {if $permissions.delete || ($permissions.create && $file->poster == $user->id)}
                 {icon action=delete record=$file title="Delete this file"|gettext onclick="return confirm('"|cat:("Are you sure you want to delete this file?"|gettext)|cat:"');"}
             {/if}
         </div>
@@ -92,7 +92,10 @@
     {if $config.usebody!=2}
         <div class="bodycopy">
             {if $config.usebody==1}
-                <p>{$file->body|summarize:"html":"paralinks"}</p>
+                {*<p>{$file->body|summarize:"html":"paralinks"}</p>*}
+                <p>{$file->body|summarize:"html":"parahtml"}</p>
+            {elseif $config.usebody==3}
+                {$file->body|summarize:"html":"parapaged"}
             {else}
                 {$file->body}
             {/if}
@@ -132,11 +135,41 @@
             </video>
         {/if}
     {/if}
-
+    {if $config.enable_facebook_like}
+        <div id="fb-root"></div>
+        <div class="fb-like" data-href="{link action=show title=$file->sef_url}" data-send="false" data-width="{$config.fblwidth|default:'450'}" data-show-faces="{if $config.showfaces}true{else}false{/if}" data-font="{$config.font|default:''}"{if $config.color_scheme} data-colorscheme="{$config.color_scheme}"{/if}{if $config.verb} data-action="{$config.verb}"{/if}"></div>
+        {script unique='facebook_src'}
+        {literal}
+            (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        {/literal}
+        {/script}
+    {/if}
+    {if $config.enable_tweet}
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="{link action=show title=$file->sef_url}" data-text="{$file->title}"{if $config.layout} data-count="{$config.layout}"{/if}{if $config.size} data-size="{$config.size}"{/if} data-lang="en">{'Tweet'|gettext}</a>
+        {script unique='tweet_src'}
+        {literal}
+            !function(d,s,id){
+                var js,fjs=d.getElementsByTagName(s)[0];
+                if(!d.getElementById(id)){
+                    js=d.createElement(s);
+                    js.id=id;
+                    js.src="https://platform.twitter.com/widgets.js";
+                    fjs.parentNode.insertBefore(js,fjs);
+                }
+            }(document,"script","twitter-wjs");
+        {/literal}
+        {/script}
+    {/if}
     {clear}
     {permissions}
         <div class="module-actions">
-            {if $permissions.create == 1}
+            {if $permissions.create}
                 {icon class=add action=edit title="Add a File Here" text="Add a File"|gettext}
             {/if}
         </div>

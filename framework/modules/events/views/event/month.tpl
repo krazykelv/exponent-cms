@@ -20,7 +20,7 @@
             <a class="nav module-actions" href="{link action=showall time=$prevmonth3}" rel="{$prevmonth3}" title="{$prevmonth3|format_date:"%B %Y"}">{$prevmonth3|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;
             <a class="nav module-actions" href="{link action=showall time=$prevmonth2}" rel="{$prevmonth2}" title="{$prevmonth2|format_date:"%B %Y"}">{$prevmonth2|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;
             <a class="nav module-actions" href="{link action=showall time=$prevmonth}" rel="{$prevmonth}" title="{$prevmonth|format_date:"%B %Y"}">{$prevmonth|format_date:"%b"}</a>&#160;&#160;&laquo;&#160;&#160;&#160;&#160;&#160;
-            <strong>{$time|format_date:"%B %Y"}</strong>&#160;&#160;&#160;&#160;&#160;&#160;&raquo;&#160;&#160;
+            <strong>{$time|format_date:"%B %Y"}</strong>&#160;&#160;{printer_friendly_link view='showall' text=''|gettext}{export_pdf_link view='showall' text=''|gettext}&#160;&#160;&#160;&#160;&raquo;&#160;&#160;
             <a class="nav module-actions" href="{link action=showall time=$nextmonth}" rel="{$nextmonth}" title="{$nextmonth|format_date:"%B %Y"}">{$nextmonth|format_date:"%b"}</a>&#160;&#160;&raquo;&#160;
             <a class="nav module-actions" href="{link action=showall time=$nextmonth2}" rel="{$nextmonth2}" title="{$nextmonth2|format_date:"%B %Y"}">{$nextmonth2|format_date:"%b"}</a>&#160;&#160;&raquo;&#160;
             <a class="nav module-actions" href="{link action=showall time=$nextmonth3}" rel="{$nextmonth3}" title="{$nextmonth3|format_date:"%B %Y"}">{$nextmonth3|format_date:"%b"}</a>&#160;&#160;&raquo;
@@ -121,9 +121,9 @@
                                     {permissions}
                                         {if substr($item->location_data,0,3) == 'O:8'}
                                         <div class="item-actions">
-                                                {if $permissions.edit == 1}
+                                                {if $permissions.edit || ($permissions.create && $item->poster == $user->id)}
                                                     {if $myloc != $item->location_data}
-                                                        {if $permissions.manage == 1}
+                                                        {if $permissions.manage}
                                                             {icon img='arrow_merge.png' action=merge id=$item->id title="Merge Aggregated Content"|gettext}
                                                         {else}
                                                             {icon img='arrow_merge.png' title="Merged Content"|gettext}
@@ -132,7 +132,7 @@
                                                     {icon img="edit.png" action=edit record=$item date_id=$item->date_id title="Edit this Event"|gettext}
                                                     {icon img="copy.png" action=copy record=$item date_id=$item->date_id title="Copy this Event"|gettext}
                                                 {/if}
-                                                {if $permissions.delete == 1}
+                                                {if $permissions.delete || ($permissions.create && $item->poster == $user->id)}
                                                     {if $item->is_recurring == 0}
                                                         {icon img="delete.png" action=delete record=$item date_id=$item->date_id title="Delete this Event"|gettext}
                                                     {else}
@@ -163,17 +163,18 @@
 	</table>
 
 {if $config.lightbox}
-{css unique="cal-lightbox" link="`$asset_path`css/lightbox.css"}
-
-{/css}
 
 {*FIXME convert to yui3*}
-{script unique="shadowbox`$myloc`" yui3mods=1}
+{script unique="shadowbox-`$__loc->src`" yui3mods=1}
 {literal}
     EXPONENT.YUI3_CONFIG.modules = {
         'yui2-lightbox' : {
             fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/events/assets/js/lightbox.js',
-            requires : ['yui2-dom','yui2-event','yui2-connectioncore','yui2-json','yui2-selector','yui2-animation']
+            requires : ['yui2-dom','yui2-event','yui2-connectioncore','yui2-json','yui2-selector','yui2-animation','yui2-lightbox-css']
+        },
+        'yui2-lightbox-css' : {
+            fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/events/assets/css/lightbox.css',
+            type: 'css'
         }
     }
     YUI(EXPONENT.YUI3_CONFIG).use('node','yui2-container','yui2-yahoo-dom-event','yui2-lightbox', function(Y) {

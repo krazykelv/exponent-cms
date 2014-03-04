@@ -39,9 +39,19 @@ function smarty_function_bootstrap_navbar($params,&$smarty) {
     if (empty($params['menu'])) {
         return $menu;
     } else {
-        foreach ($params['menu'] as $key=>$page) {
+        foreach ($params['menu'] as $page) {
             $menu .= build_menu($page,$params);
         }
+        expJavascript::pushToFoot(array(
+            "unique"  => 'bootstrap-dropdown',
+            "jquery"=> '1',
+            "src"=> PATH_RELATIVE . 'external/bootstrap/js/bootstrap-dropdown.js',
+        ));
+        expJavascript::pushToFoot(array(
+            "unique"  => 'bootstrap-collapse',
+            "jquery"=> '1',
+            "src"=> PATH_RELATIVE . 'external/bootstrap/js/bootstrap-collapse.js',
+        ));
         return $menu;
     }
 }

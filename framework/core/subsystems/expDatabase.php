@@ -130,7 +130,7 @@ class expDatabase {
     public static function install_dbtables($aggressive=false) {
    	    global $db;
 
-   		expSession::clearCurrentUserSessionCache();
+   		expSession::clearAllUsersSessionCache();
    		$tables = array();
 
    		// first the core and 1.0 definitions
@@ -149,10 +149,10 @@ class expDatabase {
    						}
    					} else {
    						foreach ($db->alterTable($tablename,$dd,$info,$aggressive) as $key=>$status) {
-   //							if (isset($tables[$key])) echo "$tablename, $key<br>";  //FIXME we shouldn't echo this, already installed?
+//							if (isset($tables[$key])) echo "$tablename, $key<br>";  //FIXME we shouldn't echo this, already installed?
    							if ($status == TABLE_ALTER_FAILED){
    								$tables[$key] = $status;
-   							}else{
+   							} else {
    								$tables[$key] = ($status == TABLE_ALTER_NOT_NEEDED ? DATABASE_TABLE_EXISTED : DATABASE_TABLE_ALTERED);
    							}
 
@@ -188,10 +188,10 @@ class expDatabase {
    										}
    									} else {
    										foreach ($db->alterTable($tablename,$dd,$info,$aggressive) as $key=>$status) {
-   //											if (isset($tables[$key])) echo "$tablename, $key<br>";  //FIXME we shouldn't echo this, already installed?
+//											if (isset($tables[$key])) echo "$tablename, $key<br>";  //FIXME we shouldn't echo this, already installed?
    											if ($status == TABLE_ALTER_FAILED){
    												$tables[$key] = $status;
-   											}else{
+   											} else {
    												$tables[$key] = ($status == TABLE_ALTER_NOT_NEEDED ? DATABASE_TABLE_EXISTED : DATABASE_TABLE_ALTERED);
    											}
 
@@ -206,10 +206,7 @@ class expDatabase {
    		}
    		return $tables;
    	}
-
 }
-
-
 
 /**
 * This is the class database
@@ -336,8 +333,8 @@ abstract class database {
 	   if ($additional_where == null) {
 	       $additional_where = '1';
 	   }
-        $a = intval($a);
-        $b = intval($b);
+       $a = intval($a);
+       $b = intval($b);
 	   $object_a = $this->selectObject($table, "$field='$a' AND $additional_where");
 	   $object_b = $this->selectObject($table, "$field='$b' AND $additional_where");
 
@@ -940,7 +937,8 @@ abstract class database {
 	       return DB_DEF_TIMESTAMP;
        elseif ($type == "datetime")
   	       return DB_DEF_TIMESTAMP;
-	   //else if (substr($type,5) == "double") return DB_DEF_DECIMAL;
+	   //else if (substr($type,5) == "double")
+           //return DB_DEF_DECIMAL;
 	   elseif ($type == "double")
 	       return DB_DEF_DECIMAL;
 	   // Strings

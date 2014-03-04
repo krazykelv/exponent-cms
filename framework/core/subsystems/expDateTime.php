@@ -91,7 +91,50 @@ class expDateTime {
 		$duration['seconds'] = $d;
 		return $duration;
 	}
-	
+
+    /** exdoc
+   	 * Given a timestamp, this function will calculate another timestamp
+   	 * that represents the beginning of the year that the passed timestamp
+   	 * falls into.  For instance, passing a timestamp representing January 25th 1984
+   	 * would return a timestamp representing January 1st 1984, at 12:00am.
+   	 *
+   	 * @param int $timestamp The original timestamp to use when calculating.
+   	 * @return int
+   	 * @node Subsystems:expDateTime
+   	 */
+   	public static function startOfYearTimestamp($timestamp) {
+   		$info = getdate($timestamp);
+   		// Calculate the timestamp at 8am, and then subtract 8 hours, for Daylight Savings
+   		// Time.  If we are in those strange edge cases of DST, 12:00am can turn out to be
+   		// of the previous day.
+   		return mktime(0,0,0,1,1,$info['year']);
+   	}
+
+   	/** exdoc
+   	 * Given a timestamp, this function will calculate another timestamp
+   	 * that represents the end of the year that the passed timestamp
+   	 * falls into.  For instance, passing a timestamp representing January 25th 1984
+   	 * would return a timestamp representing December 31st 1984, at 11:59pm.
+   	 *
+   	 * @param int $timestamp The original timestamp to use when calculating.
+   	 * @return int
+   	 * @node Subsystems:expDateTime
+   	 */
+   	public static function endOfYearTimestamp($timestamp) {
+   		$info = getdate($timestamp);
+   		// No month has fewer than 28 days, even in leap year, so start out at 28.
+   		// At most, we will loop through the while loop 3 times (29th, 30th, 31st)
+   //		$info['mday'] = 28;
+   //		// Keep incrementing the mday value until it is not valid, and use last valid value.
+   //		// This should get us the last day in the month, and take into account leap years
+   //		while (checkdate($info['mon'],$info['mday']+1,$info['year'])) $info['mday']++;
+   //		// Calculate the timestamp at 8am, and then subtract 8 hours, for Daylight Savings
+   //		// Time.  If we are in those strange edge cases of DST, 12:00am can turn out to be
+   //		// of the previous day.
+   //		return mktime(23,59,59,$info['mon'],$info['mday'],$info['year']);
+           return mktime(23,59,59,12,31,$info['year']);
+   	}
+
 	/** exdoc
 	 * Given a timestamp, this function will calculate another timestamp
 	 * that represents the beginning of the month that the passed timestamp
@@ -501,26 +544,30 @@ class expDateTime {
 	public static function monthlyDaysTimestamp($time=null) {
 //		global $db;
 		$monthly = array();
-//		$info = getdate(time());
         if (empty($time)) $time = time();
         $info = getdate($time);
 		// Grab non-day numbers only (before end of month)
-		$week = 0;
+        $week = date('W',expDateTime::startOfWeekTimestamp($time));
 
 		$infofirst = getdate(mktime(0,0,0,$info['mon'],1,$info['year']));
 
 		if ($infofirst['wday'] == 0) $monthly[$week] = array(); // initialize for non days
-		for ($i = 0 - $infofirst['wday']; $i < 0; $i++) {
-			$monthly[0][$i] = array("ts"=>-1);
+		for ($i = 0 - $infofirst['wday'] + intval(DISPLAY_START_OF_WEEK); $i < 0; $i++) {
+//			$monthly[0][$i] = array("ts"=>-1);
+            $monthly[$week][$i] = array("ts"=>-1);
 		}
 
-		$weekday = $infofirst['wday']; // day number in grid.  if 7+, switch weeks
+//		$weekday = $infofirst['wday']; // day number in grid.  if 7+, switch weeks
+//        if ($i) {
+//            $weekday -= DISPLAY_START_OF_WEEK;
+//        }
+        $weekday = count($monthly[$week]);
 
-		$endofmonth = date('t', time());
+		$endofmonth = date('t', $time);
 
 		for ($i = 1; $i <= $endofmonth; $i++) {
 			$start = mktime(0,0,0,$info['mon'],$i,$info['year']);
-			if ($i == $info['mday']) $currentweek = $week;
+//			if ($i == $info['mday']) $currentweek = $week;
 
 			$monthly[$week][$i] = array("ts"=>$start);
 			if ($weekday >= 6) {
@@ -531,12 +578,20 @@ class expDateTime {
 		}
 
 		// Grab non-day numbers only (after end of month)
-		for ($i = 1; $weekday && $i <= (7-$weekday); $i++) $monthly[$week][$i+$endofmonth] = -1;
+		for ($i = 1; $weekday && $i <= (7-$weekday); $i++) $monthly[$week][$i+$endofmonth] = array("ts"=>-1);
+        if (empty($monthly[$week])) unset($monthly[$week]);
 
 		return $monthly;
 	}
 
-	public static function relativeDate($posted_date) {
+    /**
+     * Returns date as a relative phrase (2 days ago, etc..)
+     *
+     * @param $posted_date
+     *
+     * @return string
+     */
+    public static function relativeDate($posted_date) {
 		/**
 			This function returns either a relative date or a formatted date depending
 			on the difference between the current datetime and the datetime passed.
@@ -554,12 +609,12 @@ class expDateTime {
 			By Garrett Murray, http://graveyard.maniacalrage.net/etc/relative/
 		**/
         $diff = time()-$posted_date;
-		$posted_date = date('YmdGis',$posted_date);  // convert to expected format
+		$fposted_date = date('YmdGis',$posted_date);  // convert to expected format
 
-//		$in_seconds = strtotime(substr($posted_date,0,8).' '.
-//					  substr($posted_date,8,2).':'.
-//					  substr($posted_date,10,2).':'.
-//					  substr($posted_date,12,2));
+//		$in_seconds = strtotime(substr($fposted_date,0,8).' '.
+//					  substr($fposted_date,8,2).':'.
+//					  substr($fposted_date,10,2).':'.
+//					  substr($fposted_date,12,2));
 //		$diff = time()-$in_seconds;
 		$future = $diff < 0 ? true : false;
 		$diff = abs($diff);
@@ -579,7 +634,8 @@ class expDateTime {
 
 		if ($months>0) {
 			// over a month old, just show date (mm/dd/yyyy format)
-			return 'on '.substr($posted_date,4,2).'/'.substr($posted_date,6,2).'/'.substr($posted_date,0,4);
+//			return 'on '.substr($fposted_date,4,2).'/'.substr($fposted_date,6,2).'/'.substr($fposted_date,0,4);
+            return 'on '.self::format_date($posted_date);
 		} else {
 			if ($weeks>0) {
 				// weeks and days
@@ -636,6 +692,14 @@ class expDateTime {
     	return strftime($format,$timestamp);
     }
 
+    /**
+     * Function to check if dates are same day
+     *
+     * @param $date1
+     * @param $date2
+     *
+     * @return bool
+     */
     public static function sameDay($date1, $date2) {
         return (date("Y-m-d",$date1) == date("Y-m-d",$date2));
     }

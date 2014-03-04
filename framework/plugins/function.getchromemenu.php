@@ -101,9 +101,9 @@ function smarty_function_getchromemenu($params,&$smarty) {
             }
 			$configlink = $router->makeLink(array('module'=>expModules::getControllerName($module->info['class']), 'src'=>$module->info['source'], 'action'=>'configure', 'hcview'=>$hcview));
 			$list .= '<li><a href="'.$configlink.'" class="config-mod">'.gt("Configure Settings").'</a></li>';
-		} elseif ($module->info['hasConfig']) {  // old school module
-			$configlink = $router->makeLink(array('module'=>$module->info['class'], 'src'=>$module->info['source'], 'action'=>'configure', '_common'=>1));
-			$list .= '<li><a href="'.$configlink.'" class="config-mod">'.gt("Configure Settings").'</a></li>';
+//		} elseif ($module->info['hasConfig']) {  // old school module
+//			$configlink = $router->makeLink(array('module'=>$module->info['class'], 'src'=>$module->info['source'], 'action'=>'configure', '_common'=>1));
+//			$list .= '<li><a href="'.$configlink.'" class="config-mod">'.gt("Configure Settings").'</a></li>';
 		}
 	}
 
@@ -123,7 +123,7 @@ function smarty_function_getchromemenu($params,&$smarty) {
 	$list .= '</ul>';
 
     expCSS::pushToHead(array(
-	    "unique"=>"container-chrome",
+	    "unique"=>"admin-container",
 	    "link"=>PATH_RELATIVE."framework/modules/container/assets/css/admin-container.css",
 	    )
 	);

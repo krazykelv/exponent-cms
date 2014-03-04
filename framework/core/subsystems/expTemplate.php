@@ -169,19 +169,25 @@ class expTemplate {
 		return $vparam;
 	}
 
-	/** exdoc
-	 * @state <b>UNDOCUMENTED</b>
-	 * @node Undocumented
-	 * @return array
-	 */
+    /** exdoc
+     * @state <b>UNDOCUMENTED</b>
+     *
+     * @node Undocumented
+     *
+     * @param bool $include_static
+     *
+     * @return array
+     */
     //FIXME we need to also look for custom & jquery controls
-	public static function listControlTypes() {
+	public static function listControlTypes($include_static = true) {
 		$cdh = opendir(BASE."framework/core/forms/controls");
 		$list = array();
 		while (($ctl = readdir($cdh)) !== false) {
 			if (substr($ctl,-4,4) == ".php" && is_readable(BASE."framework/core/forms/controls/$ctl")) {
 				if (call_user_func(array(substr($ctl,0,-4),"isSimpleControl"))) {
-					$list[substr($ctl,0,-4)] = call_user_func(array(substr($ctl,0,-4),"name"));
+                    if ($include_static || !call_user_func(array(substr($ctl,0,-4),"isStatic"))) {
+                        $list[substr($ctl,0,-4)] = call_user_func(array(substr($ctl,0,-4),"name"));
+                    }
 				}
 			}
 		}

@@ -34,11 +34,12 @@ class donationController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
-//        'module_title',
         'rss',
-        'tags'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'tags',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','module_title','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Online Donations"); }
     static function description() { return gt("Allows you to accept donations on your website"); }
@@ -59,16 +60,17 @@ class donationController extends expController {
         // figure out what metadata to pass back based on the action we are in.
 //        $action   = $_REQUEST['action'];
         $action   = $router->params['action'];
-        $metainfo = array('title'=>'', 'keywords'=>'', 'description'=>'', 'canonical'=> '');
+        $metainfo = array('title'=>'', 'keywords'=>'', 'description'=>'', 'canonical'=> '', 'noindex' => '', 'nofollow' => '');
         switch($action) {
             case 'donate':
-                $metainfo['title'] = 'Make a donation';
-                $metainfo['keywords'] = 'donate online';
-                $metainfo['description'] = "Make a donation";    
-                $metainfo['canonical']   = '';
+                $metainfo['title'] = gt('Make a donation');
+                $metainfo['keywords'] = gt('donate online');
+                $metainfo['description'] = gt("Make a donation");
             break;
             default:
-                $metainfo = array('title'=>$this->displayname()." - ".SITE_TITLE, 'keywords'=>SITE_KEYWORDS, 'description'=>SITE_DESCRIPTION, 'canonical'=> '');
+                $metainfo['title'] = $this->displayname()." - ".SITE_TITLE;
+                $metainfo['keywords'] = SITE_KEYWORDS;
+                $metainfo['description'] = SITE_DESCRIPTION;
         }
         
         return $metainfo;

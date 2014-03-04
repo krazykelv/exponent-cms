@@ -20,13 +20,13 @@
     <div id="worldpay-tabs" class="yui-navset exp-skin-tabview hide">
         <ul class="yui-nav">
 	        <li class="selected"><a href="#tab1"><em>{'Wordpay Checkout'|gettext}<br>{'Settings'|gettext}</em></a></li>
-	        <li><a href="#tab3"><em>{'Customer'|gettext}<br>{'Confirmations'|gettext}</em></a></li>
-	        <li><a href="#tab4"><em>{'Administrator'|gettext}<br>{'Notifications'|gettext}}</em></a></li>
+	        <li><a href="#tab2"><em>{'Customer'|gettext}<br>{'Confirmations'|gettext}</em></a></li>
+	        <li><a href="#tab3"><em>{'Administrator'|gettext}<br>{'Notifications'|gettext}}</em></a></li>
         </ul>            
         <div class="yui-content">
 	        <div id="tab1">
 	            {control type="text" name="username" label="API Username"|gettext value=$calculator->configdata.username}
-	            {control type="text" name="password" label="API Password"|gettext value=$calculator->configdata.password}
+	            {control type="password" name="password" label="API Password"|gettext value=$calculator->configdata.password}
 	            {control type="text" name="installationid" label="Installation ID"|gettext value=$calculator->configdata.installationid}
 				{*{control type="dropdown" name="authCurrency" label="Choose currency"|gettext includeblank="-- Select currency --"|gettext default=$calculator->configdata.authCurrency items="GBP (Pounds Sterling),USD (US Dollar)"|gettxtlist values="GBP, USD"}*}
 	            {control type="checkbox" name="testmode" label="Enable Test Mode?"|gettext value=1 checked=$calculator->configdata.testmode}

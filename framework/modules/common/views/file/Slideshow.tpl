@@ -15,11 +15,7 @@
  
 {uniqueid prepend="slideshow`$params.record->id`" assign="name"}
 
-{css unique="files-gallery" link="`$smarty.const.PATH_RELATIVE`framework/modules/common/assets/css/filedisplayer.css"}
-
-{/css}
-
-{css unique="photoalbum`$name`" corecss="common" link="`$smarty.const.PATH_RELATIVE`framework/modules/photoalbum/assets/css/yui3-slideshow.css"}
+{css unique="files-gallery" corecss="common" link="`$smarty.const.PATH_RELATIVE`framework/modules/common/assets/css/filedisplayer.css"}
 
 {/css}
 
@@ -50,7 +46,7 @@
         {/foreach}
     </ul>
     {if !$config.hidecontrols}
-    <div class="slideshow-buttons">
+    <div class="slideshow-buttons{if $config.dimcontrols} buttons-dim{/if}">
         <a id="prev{$name}" href="javascript:void(0);" class="prev_slide" title="Previous Slide"|gettext>
             &lt;&lt; {'Previous'|gettext}
         </a>
@@ -80,7 +76,11 @@
 EXPONENT.YUI3_CONFIG.modules = {
     'gallery-yui-slideshow': {
         fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/photoalbum/assets/js/yui3-slideshow.js',
-        requires: ['anim','node'],
+        requires: ['anim','node','slideshow-css'],
+    },
+    'slideshow-css': {
+        fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/photoalbum/assets/css/yui3-slideshow.css',
+        type: 'css'
     }
 }
 
@@ -88,6 +88,10 @@ YUI(EXPONENT.YUI3_CONFIG).use('gallery-yui-slideshow', function(Y) {
     var oSlideshow = new Y.Slideshow('#ss-{/literal}{$name}{literal} .slideshow-frame',
     {
         interval:{/literal}{$config.speed|default:5}000{literal},
+//        autoplay:{/literal}{$config.autoplay|default:true}{literal},
+        ti:'{/literal}{$config.anim_in|default:"fadeIn"}{literal}',
+        to:'{/literal}{$config.anim_out|default:"fadeOut"}{literal}',
+        duration:{/literal}{$config.duration|default:0.5}{literal},
         nextButton:"#ss-{/literal}{$name}{literal} .next_slide",
         previousButton:"#ss-{/literal}{$name}{literal} .prev_slide",
         playButton:"#ss-{/literal}{$name}{literal} .play_slide",

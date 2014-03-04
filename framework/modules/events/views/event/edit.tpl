@@ -48,9 +48,15 @@
                 	{if $config.enable_ealerts}
                 	    {control type="checkbox" name="send_ealerts" label="Send E-Alert?"|gettext value=1}
                 	{/if}
+                    {if $config.enable_auto_status}
+                        {control type="checkbox" name="send_status" label="Post as Facebook Event?"|gettext value=1}
+                    {/if}
+                    {if $config.enable_auto_tweet}
+                        {control type="checkbox" name="send_tweet" label="Post as a Tweet?"|gettext value=1}
+                    {/if}
                 </div>
                 <div id="tab2">
-                    {control type="yuicalendarcontrol" name="eventdate" label="Event Date"|gettext value=$record->eventdate[0]->date}
+                    {control type="yuicalendarcontrol" name="eventdate" label="Event Date"|gettext value=$record->eventdate[$event_key]->date}
                     {*{control type="calendar" name="eventdate" label="Event Date"|gettext default_date=$record->eventdate[0]->date}*}
                     {$jsHooks = ['onclick'=>'exponent_forms_disable_datetime(\'eventstart\',this.form,this.checked); exponent_forms_disable_datetime(\'eventend\',this.form,this.checked);']}
                   	{control type="checkbox" name="is_allday" label="All Day Event?"|gettext value=1 checked=$record->is_allday hooks=$jsHooks}
@@ -76,7 +82,7 @@
                 {/if}
                 {if $config.enable_images}
                     <div id="tab4">
-                        {control type=files name=images label="Attached Images"|gettext value=$record->expFile}
+                        {control type=files name=images label="Attached Images"|gettext accept="image/*" value=$record->expFile}
                     </div>
                 {/if}
             </div>

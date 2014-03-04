@@ -40,22 +40,24 @@
                         {control type=dropdown name=parent label="Parent Page"|gettext items=navigationController::levelDropdownControlArray(0,0,array($section->id),($user->isAdmin() || $section->parent == 0),'manage') value=$section->parent}
                     {/if}
                     {control type="checkbox" name="new_window" label="Open in New Window"|gettext|cat:"?" checked=$section->new_window value=1 description='Should menu links for this page open in a new window/tab?'|gettext}
-                    {control type="checkbox" name="active" label="Active"|gettext|cat:"?" checked=$section->active|default:1 value=1 description='Should this page menu link be active or actually link to this page?'|gettext}
+                    {control type="checkbox" name="active" label="Active"|gettext|cat:"?" checked=$section->active|default:1 value=1 description='Should this page menu link be active and actually link to this page?'|gettext}
                     {control type="checkbox" name="public" label="Public"|gettext|cat:"?" checked=$section->public|default:1 value=1 description='Should this page and menu item be visible to all users regardless of permissions?'|gettext}
                     {control type="dropdown" name="subtheme" label="Theme Variation"|gettext items=expTheme::getSubThemes() value=$section->subtheme description='Select an alternate page format'|gettext}
                     {if $smarty.const.ENABLE_SSL}
                         {*TODO we don't secure individual pages at this time*}
                         {*{control type="checkbox" name="secured" label="Secured"|gettext|cat:"?" checked=$section->secured value=1}*}
                     {/if}
-                    {control type="files" name="files" label="Icon"|gettext value=$section->expFile limit=1 description='Select an icon to use for this menu item'|gettext}
+                    {control type="files" name="files" label="Icon"|gettext accept="image/*" value=$section->expFile limit=1 description='Select an icon to use for this menu item'|gettext}
                 </div>
                 <div id="tab2">
                     <h2>{'SEO Information'|gettext}</h2>
-                    {control type=text name=sef_name label="SEF URL"|gettext value=$section->sef_name description='If you don\'t put in an SEF URL one will be generated based on the title provided. SEF URLs can only contain alpha-numeric characters, hyphens, forward slashes,  and underscores.'|gettext}
-                    {control type=text name=canonical label="Canonical URL"|gettext value=$section->canonical|default description='Helps get rid of dupes'|gettext}
-                    {control type=text name=page_title label="Page Title"|gettext value=$section->page_title}
-                    {control type=textarea name=keywords label="Keywords"|gettext value=$section->keywords}
-                    {control type=textarea name=description label="Page Description"|gettext value=$section->description}
+                    {control type=text name=sef_name label="SEF URL"|gettext value=$section->sef_name description='If you don\'t put in an SEF URL one will be generated based on the title provided. SEF URLs can only contain alpha-numeric characters, hyphens, forward slashes, and underscores.'|gettext}
+                    {control type=text name=canonical label="Canonical URL"|gettext value=$section->canonical|default description='Helps get rid of duplicate search engine entries'|gettext}
+                    {control type=text name=page_title label="Page Title"|gettext value=$section->page_title description='Override the page/menu name for search engine entries'|gettext}
+                    {control type=textarea name=keywords label="Keywords"|gettext value=$section->keywords description='Comma separated phrases - overrides site keywords'|gettext}
+                    {control type=textarea name=description label="Page Description"|gettext value=$section->description description='Page description for search engine entries'|gettext}
+                    {control type="checkbox" name="noindex" label="Do Not Index"|gettext|cat:"?" checked=$section->noindex value=1 description='Should this page be indexed by search engines?'|gettext}
+                    {control type="checkbox" name="nofollow" label="Do Not Follow Links"|gettext|cat:"?" checked=$section->nofollow value=1 description='Should links on this page be indexed and followed by search engines?'|gettext}
                 </div>
             </div>
         </div>

@@ -190,7 +190,7 @@
                                     <h1>Pixidou 0.1-exp - an open source AJAX image editor</h1>
                                     <br/>
                                     <p>(c) 2008 - Asvin Balloo</p>
-                                    <p>(c) 2012 - Extensively modified to work within Exponent CMS</p>
+                                    <p>(c) 2013 - Extensively enhanced to work within Exponent CMS</p>
                                 </div>
                                 <div id="aboutJoin">
                                     <p>I'm currently looking for some collaborators to take Pixidou a level higher. </p>
@@ -263,6 +263,6 @@
         
         <input type=hidden id="update" value="{$update}">
         <input type=hidden id="fid" value="{$image->id}">
-        <input type=hidden id="fromFCK" value="{$smarty.get.fck}">
+        {*<input type=hidden id="fromCK" value="{$smarty.get.ck}">*}
     </body>
 </html>

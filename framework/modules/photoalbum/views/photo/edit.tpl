@@ -28,7 +28,7 @@
                     <h2>{'Photo Item'|gettext}</h2>
                     {control type=text name=title label="Title"|gettext value=$record->title description='Overrides file manager \'title\''|gettext}
                     {control type="text" name="alt" label="'Alt' tag"|gettext value=$record->alt description='Overrides file manager \'alt\''|gettext}
-                    {control type="files" name="files" label="Files"|gettext value=$record->expFile limit=1}
+                    {control type="files" name="files" label="Files"|gettext accept="image/*" value=$record->expFile limit=1}
                     {control type=html name=body label="Description"|gettext value=$record->body}
                     {*{control type="text" name="link" label="Link this Slideshow Slide to a URL"|gettext value=$record->link}*}
                     {control type=url name="link" label="Link this Slideshow Slide to a URL"|gettext value=$record->link}
@@ -41,11 +41,13 @@
                 </div>
                 <div id="tab2">
                     <h2>{'SEO Settings'|gettext}</h2>
-                    {control type="text" name="sef_url" label="SEF URL"|gettext value=$record->sef_url}
-                    {control type="text" name="canonical" label="Canonical URL"|gettext value=$record->canonical}
-                    {control type="text" name="meta_title" label="Meta Title"|gettext value=$record->meta_title}
-                    {control type="textarea" name="meta_description" label="Meta Description"|gettext rows=5 cols=35 value=$record->meta_description}
-                    {control type="textarea" name="meta_keywords" label="Meta Keywords"|gettext rows=5 cols=35 value=$record->meta_keywords}
+                    {control type="text" name="sef_url" label="SEF URL"|gettext value=$record->sef_url description='If you don\'t put in an SEF URL one will be generated based on the title provided. SEF URLs can only contain alpha-numeric characters, hyphens, forward slashes, and underscores.'|gettext}
+                    {control type="text" name="canonical" label="Canonical URL"|gettext value=$record->canonical description='Helps get rid of duplicate search engine entries'|gettext}
+                    {control type="text" name="meta_title" label="Meta Title"|gettext value=$record->meta_title description='Override the item title for search engine entries'|gettext}
+                    {control type="textarea" name="meta_description" label="Meta Description"|gettext rows=5 cols=35 value=$record->meta_description description='Override the item summary for search engine entries'|gettext}
+                    {control type="textarea" name="meta_keywords" label="Meta Keywords"|gettext rows=5 cols=35 value=$record->meta_keywords description='Comma separated phrases - overrides site keywords and item tags'|gettext}
+                    {control type="checkbox" name="meta_noindex" label="Do Not Index"|gettext|cat:"?" checked=$section->meta_noindex value=1 description='Should this page be indexed by search engines?'|gettext}
+                    {control type="checkbox" name="meta_nofollow" label="Do Not Follow Links"|gettext|cat:"?" checked=$section->meta_nofollow value=1 description='Should links on this page be indexed and followed by search engines?'|gettext}
                 </div>
             </div>
         </div>

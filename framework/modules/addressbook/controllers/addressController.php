@@ -35,11 +35,13 @@ class addressController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
         'pagination',
         'rss',
-        'tags'
-    ); // all options: ('aggregation','categories','comments','ealerts','files','module_title','pagination','rss','tags')
+        'tags',
+        'twitter',
+    ); // all options: ('aggregation','categories','comments','ealerts','facebook','files','module_title','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Addresses"); }
     static function description() { return gt("Display and manage addresses of users on your site."); }
@@ -81,7 +83,9 @@ class addressController extends expController {
 	}
 
 	public function update() {
-		global $db, $user;
+//		global $db, $user;
+        global $user;
+
 		if ($user->isLoggedIn()) {
 			// check to see how many other addresses this user has already.
 			$count = $this->address->find('count', 'user_id='.$user->id);

@@ -43,6 +43,16 @@ class expJavascript {
         global $userjsfiles,$expJS,$yui2js,$yui3js,$jqueryjs, $head_config;
 
         $scripts = '';
+        // remove duplicate scripts since it's inefficient and crashes minify
+        $newexpJS = array();
+        $usedJS = array();
+        foreach($expJS as $eJS) {
+            if (!in_array($eJS['fullpath'],$usedJS)) {
+                $usedJS[] = $eJS['fullpath'];
+                $newexpJS[$eJS['name']] = $eJS;
+            }
+        }
+        $expJS = $newexpJS;
         ob_start();
   		include(BASE.'exponent.js.php');
         $exponent_js = ob_get_clean();
@@ -60,6 +70,7 @@ class expJavascript {
             $strlen = (ini_get("suhosin.get.max_value_length")==0) ? MINIFY_URL_LENGTH : ini_get("suhosin.get.max_value_length");
             $i = 0;
             $srt = array();
+            $srt[$i] = '';
             if (!empty($yui3js)) $srt[$i] = YUI3_RELATIVE.'yui/yui-min.js,';
             if (!empty($jqueryjs) || $head_config['framework'] == 'jquery' || $head_config['framework'] == 'bootstrap') {
                 if (strlen($srt[$i])+strlen(JQUERY_SCRIPT)<= $strlen && $i <= MINIFY_MAX_FILES) {
@@ -70,26 +81,26 @@ class expJavascript {
                     $srt[$i] = JQUERY_SCRIPT.",";
                 }
                 if ($head_config['framework'] == 'bootstrap') {
-                    if (strlen($srt[$i])+strlen(PATH_RELATIVE.'external/bootstrap/js/bootstrap.min.js')<= $strlen && $i <= MINIFY_MAX_FILES) {
-                        $srt[$i] .= PATH_RELATIVE.'external/bootstrap/js/bootstrap.min.js'.",";
-                    } else {
-                        $i++;
-//                        $srt[$i] = "";
-                        $srt[$i] = 'external/bootstrap/js/bootstrap.min.js'.",";
-                    }
+//                    if (strlen($srt[$i])+strlen(PATH_RELATIVE.'external/bootstrap/js/bootstrap.min.js')<= $strlen && $i <= MINIFY_MAX_FILES) {
+//                        $srt[$i] .= PATH_RELATIVE.'external/bootstrap/js/bootstrap.min.js'.",";
+//                    } else {
+//                        $i++;
+////                        $srt[$i] = "";
+//                        $srt[$i] = 'external/bootstrap/js/bootstrap.min.js'.",";
+//                    }
+                    $lessvars = array_merge(array('swatch'=>SWATCH), array('themepath'=>'"../../../themes/'.DISPLAY_THEME.'/less"'), $head_config['lessvars']);
                     expCSS::pushToHead(array(
-               		    "unique"=>'bootstrap1',
-               		    "lesscss"=>"external/bootstrap/less/bootstrap.less",
-                        "lessvars"=>array(
-                            'swatch'=>SWATCH,
-                        ),
+               		    "unique"=>'000bootstrap1',
+               		    "lessprimer"=>"external/bootstrap/less/bootstrap.less",
+                        "lessvars"=>$lessvars,
                     ));
                     expCSS::pushToHead(array(
-               		    "unique"=>'bootstrap2',
-               		    "lesscss"=>PATH_RELATIVE."external/bootstrap/less/responsive.less",
+               		    "unique"=>'000bootstrap2',
+               		    "lessprimer"=>"external/bootstrap/less/responsive.less",
+                        "lessvars"=>$lessvars,
                     ));
                 }
-                if (!empty($jqueryjs)) foreach ($jqueryjs as $key=>$mod) {
+                if (!empty($jqueryjs)) foreach ($jqueryjs as $mod) {
                     if ($mod == 'jqueryui') {
                         if (strlen($srt[$i])+strlen(JQUERYUI_SCRIPT) <= $strlen && $i <= MINIFY_MAX_FILES) {
                             $srt[$i] .= JQUERYUI_SCRIPT.",";
@@ -100,7 +111,7 @@ class expJavascript {
                         }
                         expCSS::pushToHead(array(
                             "unique"=>'jqueryui',
-                            'link'=>JQUERYUI_CSS
+                            'css_primer'=>JQUERYUI_CSS
                         ));
                     } else {
                         if (file_exists(BASE.'themes/'.DISPLAY_THEME.'/js/'.$mod.'.js')) {
@@ -136,13 +147,13 @@ class expJavascript {
                             if (file_exists(JQUERY_PATH.'addons/less/'.$mod.'.less')) {
                                 expCSS::pushToHead(array(
                            		    "unique"=>$mod,
-                           		    "lesscss"=>JQUERY_RELATIVE.'addons/less/'.$mod.'.less',
+                           		    "lessprimer"=>JQUERY_RELATIVE.'addons/less/'.$mod.'.less',
                            		    )
                            		);
                             } elseif (file_exists(JQUERY_PATH.'addons/css/'.$mod.'.css')) {
                                 expCSS::pushToHead(array(
                            		    "unique"=>$mod,
-                           		    "link"=>JQUERY_RELATIVE.'addons/css/'.$mod.'.css',
+                           		    "css_primer"=>JQUERY_RELATIVE.'addons/css/'.$mod.'.css',
                            		    )
                            		);
                             }
@@ -167,26 +178,25 @@ class expJavascript {
             if (!empty($jqueryjs) || $head_config['framework'] == 'jquery' || $head_config['framework'] == 'bootstrap') {
                 $scripts .= "\t"."<!-- jQuery Scripts -->"."\r\n";
                 $scripts .= "\t".'<script type="text/javascript" src="'.JQUERY_SCRIPT.'"></script>'."\r\n";
-                if ($head_config['framework'] == 'bootstrap') {
-                    $scripts .= "\t".'<script type="text/javascript" src="'.PATH_RELATIVE.'external/bootstrap/js/bootstrap.min.js"></script>'."\r\n";
+                if (!empty($head_config['framework']) && $head_config['framework'] == 'bootstrap') {
+                    $lessvars = array_merge(array('swatch'=>SWATCH), array('themepath'=>'"../../../themes/'.DISPLAY_THEME.'/less"'), !empty($head_config['lessvars']) ? $head_config['lessvars'] : array());
                     expCSS::pushToHead(array(
-               		    "unique"=>'bootstrap1',
-               		    "lesscss"=>"external/bootstrap/less/bootstrap.less",
-                        "lessvars"=>array(
-                            'swatch'=>SWATCH,
-                        ),
+               		    "unique"=>'000bootstrap1',
+               		    "lessprimer"=>"external/bootstrap/less/bootstrap.less",
+                        "lessvars"=>$lessvars,
                     ));
                     expCSS::pushToHead(array(
-               		    "unique"=>'bootstrap2',
-               		    "lesscss"=>"external/bootstrap/less/responsive.less",
+               		    "unique"=>'000bootstrap2',
+               		    "lessprimer"=>"external/bootstrap/less/responsive.less",
+                        "lessvars"=>$lessvars,
                     ));
                 }
-                if (!empty($jqueryjs)) foreach ($jqueryjs as $key=>$mod) {
+                if (!empty($jqueryjs)) foreach ($jqueryjs as $mod) {
                     if ($mod == 'jqueryui') {
                         $scripts .= "\t".'<script type="text/javascript" src="'.JQUERYUI_SCRIPT.'"></script>'."\r\n";
                         expCSS::pushToHead(array(
                             "unique"=>'jqueryui',
-                            'link'=>JQUERYUI_CSS
+                            'css_primer'=>JQUERYUI_CSS
                         ));
                     } else {
                         if (file_exists(BASE.'themes/'.DISPLAY_THEME.'/js/'.$mod.'.js')) {
@@ -209,13 +219,13 @@ class expJavascript {
                             if (file_exists(JQUERY_PATH.'addons/less/'.$mod.'.less')) {
                                 expCSS::pushToHead(array(
                            		    "unique"=>$mod,
-                           		    "lesscss"=>JQUERY_RELATIVE.'addons/less/'.$mod.'.less',
+                           		    "lessprimer"=>JQUERY_RELATIVE.'addons/less/'.$mod.'.less',
                            		    )
                            		);
                             } elseif (file_exists(JQUERY_PATH.'addons/css/'.$mod.'.css')) {
                                 expCSS::pushToHead(array(
                            		    "unique"=>$mod,
-                           		    "link"=>JQUERY_RELATIVE.'addons/css/'.$mod.'.css',
+                           		    "css_primer"=>JQUERY_RELATIVE.'addons/css/'.$mod.'.css',
                            		    )
                            		);
                             }
@@ -226,7 +236,7 @@ class expJavascript {
             $scripts .= (!empty($yui3js)) ? "\t"."<!-- YUI3 Script -->"."\r\n\t".'<script type="text/javascript" src="'.YUI3_RELATIVE.'yui/yui-min.js"></script>'."\r\n" : "";
             if (!empty($expJS)) {
                 $scripts .= "\t"."<!-- Other Scripts -->"."\r\n";
-                foreach ($expJS as $key=>$mod) {
+                foreach ($expJS as $mod) {
                     $scripts .= "\t".'<script type="text/javascript" src="'.$mod['fullpath'].'"></script>'."\r\n";
                 }
             }
@@ -243,7 +253,7 @@ class expJavascript {
         // solution: alphabetical by unique
         if(!empty($js2foot)){
             ksort($js2foot);
-            foreach($js2foot as $key=>$file){
+            foreach($js2foot as $file){
                 $html.= $file."\r\n";
             }            
         } 
@@ -307,7 +317,7 @@ class expJavascript {
             $stripmodquotes = str_replace($toreplace, "", $params['yui3mods']);               
             $splitmods = explode(",",$stripmodquotes);
 
-            foreach ($splitmods as $key=>$val){
+            foreach ($splitmods as $val){
                 $yui3js[$val] = $val;
             }
         }
@@ -317,7 +327,7 @@ class expJavascript {
             $stripmodquotes = str_replace($toreplace, "", $params['jquery']);
             $splitmods = explode(",",$stripmodquotes);
 
-            foreach ($splitmods as $key=>$val){
+            foreach ($splitmods as $val){
                 $jqueryjs[$val] = $val;
             }
         }

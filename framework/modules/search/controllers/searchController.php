@@ -35,10 +35,12 @@ class searchController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
         'rss',
-        'tags'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'tags',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','pagination','rss','tags','twitter',)
 
     static function displayname() { return gt("Search Form"); }
     static function description() { return gt("Add a form to allow users to search for content on your website."); }
@@ -66,7 +68,7 @@ class searchController extends expController {
 
         $page = new expPaginator(array(
             //'model'=>'search',
-            'records'=>$search->getSearchResults($terms),
+            'records'=>$search->getSearchResults($terms, !empty($this->config['only_best'])),
             //'sql'=>$sql,
             'limit'=>(isset($this->config['limit']) && $this->config['limit'] != '') ? $this->config['limit'] : 10,
             'order'=>'score',
@@ -90,13 +92,13 @@ class searchController extends expController {
 	    $db->delete('search');
 
         // old school modules
-	    foreach (expModules::modules_list() as $mod) {
-//		    $name = @call_user_func(array($mod,'name'));
-            $name = @call_user_func(array($mod,'searchName'));
-		    if (class_exists($mod) && is_callable(array($mod,'spiderContent'))) {
-                $mods[$name] = call_user_func(array($mod,'spiderContent'));
-		    }
-	    }
+//	    foreach (expModules::modules_list() as $mod) {
+////		    $name = @call_user_func(array($mod,'name'));
+//            $name = @call_user_func(array($mod,'searchName'));
+//		    if (class_exists($mod) && is_callable(array($mod,'spiderContent'))) {
+//                $mods[$name] = call_user_func(array($mod,'spiderContent'));
+//		    }
+//	    }
 
         // 2.0 modules
 	    foreach (expModules::listControllers() as $ctlname=>$ctl) {
@@ -231,7 +233,7 @@ class searchController extends expController {
 				$ctr++;
 			}
 			
-			$result  = $search->getSearchResults($item->query, true);
+			$result  = $search->getSearchResults($item->query, false, true);
 			if(empty($result) && !in_array($item->query, $badSearchArr)) {
 				$badSearchArr[] = $item->query;
 				$badSearch[$ctr2]['query'] = $item->query;

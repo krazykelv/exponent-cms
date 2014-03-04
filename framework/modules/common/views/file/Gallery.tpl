@@ -19,12 +19,6 @@
 
 {/css}
 
-{if $config.lightbox}
-{css unique="files-gallery" link="`$smarty.const.PATH_RELATIVE`framework/modules/common/assets/css/gallery-lightbox.css"}
-
-{/css}    
-{/if}
-
 {if $config.floatthumb!="No Float" && $config.floatthumb!="Bottom"}
     {capture assign="imgflot"}
     float:{$config.floatthumb|lower};
@@ -71,7 +65,11 @@ margin:{$config.spacing}px;
 EXPONENT.YUI3_CONFIG.modules = {
     'gallery-lightbox' : {
        fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/common/assets/js/gallery-lightbox.js',
-       requires : ['base','node','anim','selector-css3']
+       requires : ['base','node','anim','selector-css3','lightbox-css']
+    },
+    'lightbox-css': {
+        fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/common/assets/css/gallery-lightbox.css',
+        type: 'css'
     }
 }
 

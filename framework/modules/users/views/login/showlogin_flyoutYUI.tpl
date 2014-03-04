@@ -21,7 +21,7 @@
 
 {/css}
 
-<div class="module login flyout" style="display: none;">
+<div class="module login flyout" style="display: none;" hidden="true">
     {if $loggedin == false || $smarty.const.PREVIEW_READONLY == 1}
     <div{if $smarty.const.SITE_ALLOW_REGISTRATION || $smarty.const.ECOM} class="box login-form one"{/if}>
         {if $smarty.const.USER_REGISTRATION_USE_EMAIL || $smarty.const.ECOM}
@@ -45,7 +45,6 @@
     {if $smarty.const.SITE_ALLOW_REGISTRATION || $smarty.const.ECOM}
         <div class="box new-user two">
             <h2>{"New"|gettext} {$usertype}</h2>
-
             <p>
                 {if $smarty.const.ECOM}
                     {if $oicount>0}
@@ -69,11 +68,13 @@
 {else}
     <div>
         <strong>{'Welcome'|gettext|cat:', %s'|sprintf:$displayname}</strong>{br}{br}
-        <a class="profile" href="{link controller=users action=edituser id=$user->id}">{'Edit Profile'|gettext}</a>{br}
+        {if !$user->globalPerm('prevent_profile_change')}
+            <a class="profile" href="{link controller=users action=edituser id=$user->id}">{'Edit Profile'|gettext}</a>{br}
+        {/if}
         {if $is_group_admin}
             <a class="groups" href="{link controller=users action=manage_group_memberships}">{'My Groups'|gettext}</a>{br}
         {/if}
-        {if !$smarty.const.USER_NO_PASSWORD_CHANGE}
+        {if ((!$smarty.const.USER_NO_PASSWORD_CHANGE || $user->isAdmin()) && !$user->is_ldap)}
             <a class="password" href="{link controller=users action=change_password}">{'Change Password'|gettext}</a>{br}
         {/if}
         <a class="logout" href="{link action=logout}">{'Logout'|gettext}</a>{br}

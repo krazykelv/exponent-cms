@@ -22,23 +22,28 @@
  */
 
 class notfoundController extends expController {
-    //public $useractions = array('showall'=>'Show all');
-    public $add_permissions = array('showall'=>'Showall', 'show'=>'Show');
+    public $add_permissions = array(
+        'showall'=>'Showall',
+        'show'=>'Show'
+    );
 
-    static function displayname() { return gt("Not Found Controller"); }
-    static function description() { return gt("This controller handles routing not found pages to the appropriate place."); }
+    static function displayname() { return gt("Page Not Found"); }
+    static function description() { return gt("This controller handles routing to the appropriate place when pages are not found."); }
     static function hasSources() { return false; }
     static function hasViews() { return false; }
     static function hasContent() { return false; }
     
     public function handle() {
         global $router;
+
         $args = array_merge(array('controller'=>'notfound', 'action'=>'page_not_found'), $router->url_parts);   
         header("Refresh: 0; url=".$router->makeLink($args), false, 404);
     }
     
     public function page_not_found() {
         global $router;
+
+        header(':', true, 404);
         $params = $router->params;
         unset($params['controller']);
         unset($params['action']);
@@ -72,6 +77,22 @@ class notfoundController extends expController {
             'page'=>$page,
             'terms'=>$terms
         ));
+    }
+
+    public static function handle_not_found() {
+        header(':', true, 404);
+        echo '<h1>' . SITE_404_TITLE . '</h1><br />';
+        echo '<p>' . SITE_404_HTML . '</p>';
+    }
+
+    public static function handle_not_authorized() {
+        header(':', true, 403);
+        echo SITE_403_HTML;
+    }
+
+    public static function handle_internal_error() {
+        header(':', true, 500);
+        echo '<h1>' . gt('An Internal Server Error was Encountered!') . '</h1>';
     }
 
 }

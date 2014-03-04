@@ -84,7 +84,56 @@ You can use this as a standalone library if you wish, or just stick with the ful
 * Ogg/Theora playback
 * Better alignment with native MediaElement (using shimichanga.com techniques)
 
-*2.11.3	(2013/04/12 in progress)*
+
+*2.13.1 (2013/09/?06)*
+
+* Support for fullscreen in IE11 beta
+
+*2.13.0 (2013/09/01)*
+
+* BREAKING FLASH SECURITY CHANGE: Removed `allowDomain("*")` by default. If you use MediaElement.js on a different domain use the `flashmediaelement-cdn.swf` file (nacin) https://github.com/johndyer/mediaelement/pull/956
+* Use only FlashVars and ignore parameters passed via query string.
+* Force LTR in controls (for RTL users) (nacin) https://github.com/johndyer/mediaelement/pull/958
+
+*2.12.1 (2013/08/26)*
+
+* Remove all `console.log` statements in `Builder.py` JD
+* More i18n fixes for Wordpress (SergeyBiryukov) https://github.com/johndyer/mediaelement/pull/940
+* Fix touch detection in QtWebKit (peterbrook) https://github.com/johndyer/mediaelement/pull/939
+* Added configuration option httpsBasicAuthSite fix sites using HTTPS basic authentication (benroy73) https://github.com/johndyer/mediaelement/pull/937
+* Fixed backlight plugin error (eviweb) https://github.com/johndyer/mediaelement/pull/932
+* Fix some wrong dates on the change log (heartcode) https://github.com/johndyer/mediaelement/pull/930
+* Add a mejs-fullscreen css class on the root element (fbuecklers) https://github.com/johndyer/mediaelement/pull/925
+* fix for ff switch between fullscreen and normal mode (fbuecklers) https://github.com/johndyer/mediaelement/pull/924
+* Multiple fixes: old issue #548, current issues #754 and #902 (peterh-capella) https://github.com/johndyer/mediaelement/pull/923
+* fix firefox detect 100% mode issue (KaptinLin ) https://github.com/johndyer/mediaelement/pull/919
+* Option to show the poster when the video is ended (LeResKP) https://github.com/johndyer/mediaelement/pull/891
+* Fix for Chrome autoplaying when forcing Flash (tjsnyder) https://github.com/johndyer/mediaelement/pull/889
+* Allow SWF to work over insecure domain (sebablanco ) https://github.com/johndyer/mediaelement/pull/897
+* Corrected buffering height on CSS (SourceR85 ) https://github.com/johndyer/mediaelement/pull/875
+* CSS cleanup (awittdesigns) https://github.com/johndyer/mediaelement/pull/883
+
+
+*2.12.0 (2013/06/02)*
+
+* Removed old media files from repo (reduced filesize from 150MB to 25MB)
+* Added `test.html` to `/tests/` folder to use JS files in `/src/` folder
+* Fullscreen plugin player toggles play/pause when controls are clicked (JeffreyATW) https://github.com/johndyer/mediaelement/pull/742 
+* Making use of pluginWidth & pluginHeight (simonschuh) https://github.com/johndyer/mediaelement/pull/837
+* Proportional poster images (IE9+ Chrome, Safari, Firefox) (eyefood) https://github.com/johndyer/mediaelement/pull/838
+* Fixed video resolution on seek in flash (efEris) https://github.com/johndyer/mediaelement/pull/839
+* Option for custom error message when no plugins are found. (svoynow-lz) https://github.com/johndyer/mediaelement/pull/842
+* Fix for Safari to play video on HTTPS site (benroy73) https://github.com/johndyer/mediaelement/pull/845
+* Fixes Mute/UnMute when playing from a YouTube source (mbaker3) https://github.com/johndyer/mediaelement/pull/848
+* i18n fixes for better compatibility with WordPress (SergeyBiryukov) https://github.com/johndyer/mediaelement/pull/850
+* Fixing invalid characters restrictions for URLs (sebablanco) https://github.com/johndyer/mediaelement/pull/859
+* Checking for pluginType on media instead of mediaelementplayer in Fullscreen (JeffreyATW) https://github.com/johndyer/mediaelement/pull/865
+* Problem with IE9 on Windows 7 N / Windows 7 KN without WMP installed (sarvaje) https://github.com/johndyer/mediaelement/pull/868
+* Cleanup stylesheet (jawittdesigns)  https://github.com/johndyer/mediaelement/pull/867
+* Properly treat namespace-only events for `globalUnbind()` (odnamrataizem) https://github.com/johndyer/mediaelement/pull/878
+* Fixed issue with slash character separating time (S2) https://github.com/johndyer/mediaelement/pull/879
+
+*2.11.3	(2013/04/13)*
 
 * Change to `getScriptPath` to allow querystring variables to be added (for Wordpress Core)
 
@@ -117,7 +166,7 @@ Fixes and updates
 * Make Flash stage handle CLICK rather than MOUSE_DOWN (odnamrataizem) (https://github.com/johndyer/mediaelement/pull/804)
 
 
-*2.11.0 (2012/03/13)*
+*2.11.0 (2013/03/13)*
 
 * Preroll ads manager
 * VAST ads plugin (sponsored by Minito Video)
@@ -137,7 +186,7 @@ Fixes and updates
 * [cc] button can now be a toggle when there's just one track (LeResKP) https://github.com/johndyer/mediaelement/pull/793
 * fixed error when srclang was missing
 
-*2.10.3 (2012/01/27)*
+*2.10.3 (2013/01/27)*
 
 * Fix broken scrollbar from API reference error (peterbrook) (https://github.com/johndyer/mediaelement/pull/739)
 

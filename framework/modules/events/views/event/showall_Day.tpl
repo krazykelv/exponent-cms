@@ -19,17 +19,13 @@
 
 {/css}
 
-{css unique="calpopup" link="`$asset_path`css/default.css"}
-
-{/css}
-
 <div class="module events viewday">
 	<div class="module-actions">
 		{icon class="weekviewlink" action=showall view=showall_Week time=$time title='View Entire Week'|gettext text='View Week'|gettext}
         {nbsp count=2}|{nbsp count=2}
 		{icon class="monthviewlink" action=showall time=$time title='View Entire Month'|gettext text='View Month'|gettext}
         {permissions}
-            {if $permissions.manage == 1}
+            {if $permissions.manage}
                 {nbsp count=2}|{nbsp count=2}
                   {icon class="adminviewlink" action=showall view='showall_Administration' time=$time text='Administration View'|gettext}
                   {if !$config.disabletags}
@@ -42,8 +38,8 @@
                   {/if}
             {/if}
         {/permissions}
-		{printer_friendly_link text='Printer-friendly'|gettext prepend='&#160;&#160;|&#160;&#160;'}
-        {export_pdf_link prepend='&#160;&#160;|&#160;&#160;'}
+		{*{printer_friendly_link text='Printer-friendly'|gettext prepend='&#160;&#160;|&#160;&#160;'}*}
+        {*{export_pdf_link prepend='&#160;&#160;|&#160;&#160;'}*}
 	</div>
 	<h1>
         {ical_link}
@@ -54,7 +50,7 @@
     {/if}
 	{permissions}
 		<div class="module-actions">
-			{if $permissions.create == 1}
+			{if $permissions.create}
 				{icon class=add action=edit title="Add a New Event"|gettext text="Add an Event"|gettext}
 			{/if}
 		</div>
@@ -67,28 +63,30 @@
     </div>
 </div>
 
-{script unique=$name yui3mods=1}
+{script unique=$name|cat:'-popup' yui3mods=1}
 {literal}
-
 EXPONENT.YUI3_CONFIG.modules = {
-	'gallery-calendar': {
-		fullpath: '{/literal}{$asset_path}js/calendar.js{literal}',
-		requires: ['node']
-	}
+    'gallery-calendar': {
+        fullpath: '{/literal}{$asset_path}js/calendar.js{literal}',
+        requires: ['node','calendar-css']
+    },
+    'calendar-css': {
+        fullpath: EXPONENT.PATH_RELATIVE+'framework/modules/events/assets/css/default.css',
+        type: 'css'
+    }
 }
-
 YUI(EXPONENT.YUI3_CONFIG).use('node','gallery-calendar','io','node-event-delegate',function(Y){
 	var today = new Date({/literal}{$time}{literal}*1000);
     var monthcal = Y.one('#day-{/literal}{$name}{literal}');
     var cfg = {
                 method: "POST",
-                headers: { 'X-Transaction': 'Load Minical'},
-                arguments : { 'X-Transaction': 'Load Minical'}
+                headers: { 'X-Transaction': 'Load Day'},
+                arguments : { 'X-Transaction': 'Load Day'}
             };
     src = '{/literal}{$__loc->src}{literal}';
     var sUrl = EXPONENT.PATH_RELATIVE+"index.php?controller=event&action=showall&view=day&ajax_action=1&src="+src;
 
-	// Popup
+	// Popup calendar
 	var cal = new Y.Calendar('J_popup_closeable{/literal}{$__loc->src|replace:'@':'_'}{literal}',{
 		popup:true,
 		closeable:true,
@@ -98,9 +96,21 @@ YUI(EXPONENT.YUI3_CONFIG).use('node','gallery-calendar','io','node-event-delegat
 //        useShim:true
 	}).on('select',function(d){
 		var unixtime = parseInt(d / 1000);
-        cfg.data = "time="+unixtime;
-        var request = Y.io(sUrl, cfg);
-        monthcal.setContent(Y.Node.create('<div class="loadingdiv">{/literal}{"Loading Day"|gettext}{literal}</div>'));
+        {/literal}
+        {if $config.ajax_paging}
+            {literal}
+                cfg.data = "time="+unixtime;
+                var request = Y.io(sUrl, cfg);
+                monthcal.setContent(Y.Node.create('<div class="loadingdiv">{/literal}{"Loading Day"|gettext}{literal}</div>'));
+            {/literal}
+        {else}
+            {if ($smarty.const.SEF_URLS == 1)} {literal}
+                window.location=eXp.PATH_RELATIVE+'event/showall/time/view/showall_Day/'+unixtime+'/src/{/literal}{$__loc->src}{literal}';
+            {/literal} {else} {literal}
+                window.location=eXp.PATH_RELATIVE+'index.php?controller=event&action=showall&view=showall_Day&time='+unixtime+'&src={/literal}{$__loc->src}{literal}';
+            {/literal} {/if}
+        {/if}
+        {literal}
 	});
     Y.one('#J_popup_closeable{/literal}{$__loc->src|replace:'@':'_'}{literal}').on('click',function(d){
         cal.show();
@@ -108,7 +118,6 @@ YUI(EXPONENT.YUI3_CONFIG).use('node','gallery-calendar','io','node-event-delegat
 
     // ajax load new month
 	var handleSuccess = function(ioId, o){
-//		Y.log(o.responseText);
 		Y.log("The success handler was called.  Id: " + ioId + ".", "info", "monthcal nav");
 
         if(o.responseText){
@@ -127,8 +136,12 @@ YUI(EXPONENT.YUI3_CONFIG).use('node','gallery-calendar','io','node-event-delegat
                 var url = n.get('href');
                 Y.Get.css(url);
             });
+            Y.one('#lb-bg').setStyle('display','none');
+//            monthcal.setStyle('opacity',1);
         } else {
-            Y.one('#day-{/literal}{$name}{literal}.loadingdiv').remove();
+            Y.one('#month-{/literal}{$name}{literal}.loadingdiv').remove();
+            monthcal.setContent('Unable to load content');
+            monthcal.setStyle('opacity',1);
         }
 	};
 
@@ -141,12 +154,21 @@ YUI(EXPONENT.YUI3_CONFIG).use('node','gallery-calendar','io','node-event-delegat
 	Y.on('io:success', handleSuccess);
 	Y.on('io:failure', handleFailure);
 
+{/literal}
+{if $config.ajax_paging}
+    {literal}
     monthcal.delegate('click', function(e){
         e.halt();
         cfg.data = "time="+e.currentTarget.get('rel');
         var request = Y.io(sUrl, cfg);
         monthcal.setContent(Y.Node.create('<div class="loadingdiv">{/literal}{"Loading Day"|gettext}{literal}</div>'));
+//        monthcal.setStyle('opacity',0.5);
+//        Y.one('#lb-bg').setStyle('display','block');
     }, 'a.nav');
+    {/literal}
+{/if}
+{literal}
+
 });
 {/literal}
 {/script}

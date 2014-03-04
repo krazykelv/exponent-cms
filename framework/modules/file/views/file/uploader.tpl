@@ -34,7 +34,7 @@
             <div id="selectFilesButtonContainer"></div>
             <a id="selectLink" class="select awesome small green" href="#"><span>{'Select Files'|gettext}</span></a>
             <a id="uploadLink" class="upload awesome small green" href="#"><span>{"Upload Files"|gettext}</span></a>
-            <a id="backlink" class="back awesome small green" href="{link action=picker ajax_action=1 ck=$smarty.get.ck update=$smarty.get.update fck=$smarty.get.fck}{if $smarty.const.SEF_URLS}?{else}&{/if}CKEditor={$smarty.get.CKEditor}&CKEditorFuncNum={$smarty.get.CKEditorFuncNum}&langCode={$smarty.get.langCode}"><span>{'Back to Manager'|gettext}</span></a>
+            <a id="backlink" class="back awesome small green" href="{link action=picker ajax_action=1 update=$smarty.get.update filter=$smarty.get.filter}{if $smarty.const.SEF_URLS}?{else}&{/if}CKEditor={$smarty.get.CKEditor}&CKEditorFuncNum={$smarty.get.CKEditorFuncNum}&langCode={$smarty.get.langCode}"><span>{'Back to Manager'|gettext}</span></a>
         </div>
         <div class="info-header clearfix">
             <div id="noflash"></div>
@@ -142,7 +142,12 @@ YUI(EXPONENT.YUI3_CONFIG).use("uploader","io",'json-parse', function(Y) {
 //                                    "<td class='percentdone'>{/literal}{'Hasn\'t started yet'|gettext}{literal}</td>" +
 //                                    "<td class='serverdata'>&nbsp;</td>");
                     rowcolor = (rowcolor=='odd')?'even':'odd';
-                    var output = "<tr class=\""+rowcolor+"\" id='" + fileInstance.get("id") + "_row" + "'><td class='filename'>" + fileInstance.get("name") + "</td><td class='filesize'>" +
+                    if (Math.round(fileInstance.get("size")/1048576*100000)/100000 > {/literal}{intval(ini_get('upload_max_filesize'))}{literal}) {
+                        sizeError = 'class="filesize error" title="{/literal}{'File is Too Large to Upload!'|gettext}{literal}"';
+                    } else {
+                        sizeError = 'class="filesize"';
+                    }
+                    var output = "<tr class=\""+rowcolor+"\" id='" + fileInstance.get("id") + "_row" + "'><td class='filename'>" + fileInstance.get("name") + "</td><td "+sizeError+"'>" +
                                     (Math.round(fileInstance.get("size")/1048576*100000)/100000).toFixed(2) + "</td><td class='percentdone'><div id='div_" +
                                 fileInstance.get("id") + "' class='progressbars'></div></td><td class='serverdata'><a href='#' class='delete' id='" + fileInstance.get("id") + "_delete" + "' title='{/literal}{'Remove file from the upload list'|gettext}{literal}'>{/literal}{'Remove'|gettext}{literal}</a></td></tr>";
                 fileTable.append(output);

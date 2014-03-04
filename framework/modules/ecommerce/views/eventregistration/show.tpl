@@ -22,7 +22,7 @@
 {/css}
 
 {if $product->user_message != ''}
-    <div id="msg-queue" class="msg-queue notice">
+    <div id="msg-queue" class="msg-queue notice" xmlns="http://www.w3.org/1999/html">
         <div class="msg">{$product->user_message}</div>
     </div>
 {/if}
@@ -38,21 +38,24 @@
     </div>
 
     <div class="bd">
-        <h2>{$product->eventdate|format_date:"%A, %B %e, %Y"}
-            {if (!empty($product->eventenddate) && $product->eventdate != $product->eventenddate)} {'to'|gettext} {$product->eventenddate|format_date:"%A, %B %e, %Y"}{/if}</h2>
+        <h2>{$product->eventdate|format_date:$smarty.const.DISPLAY_DATE_FORMAT}
+            {if (!empty($product->eventenddate) && $product->eventdate != $product->eventenddate)} {'to'|gettext} {$product->eventenddate|format_date:$smarty.const.DISPLAY_DATE_FORMAT}{/if}</h2>
         <hr>
         <h3>{$product->title}</h3>
         {permissions}
             <div class="item-actions">
-                {if $permissions.configure == 1 or $permissions.manage == 1}
+                {if $permissions.edit || ($permissions.create && $product->poster == $user->id)}
                     {icon controller="store" action="edit" id=$product->id title="Edit this entry"|gettext}
+                    {icon controller="store" action=copyProduct class="copy" record=$product text="Copy" title="Copy `$product->title` "}
+                {/if}
+                {if $permissions.delete || ($permissions.create && $product->poster == $user->id)}
                     {icon controller="store" action="delete" id=$product->id title="Delete this entry"|gettext}
                 {/if}
             </div>
         {/permissions}
-        <span><h4>{($product->eventdate+$product->event_starttime)|format_date:"%l:%M %P"}
+        <span><h4>{($product->eventdate+$product->event_starttime)|format_date:$smarty.const.DISPLAY_TIME_FORMAT}
             {if $product->eventdate+$product->event_starttime != $product->eventdate+$product->event_endtime}
-                - {($product->eventdate+$product->event_endtime)|format_date:"%l:%M %P"}
+                - {($product->eventdate+$product->event_endtime)|format_date:$smarty.const.DISPLAY_TIME_FORMAT}
                 {time_duration start=$product->eventdate+$product->event_starttime end=$product->eventdate+$product->event_endtime assign=dur}
                 <em class="attribution">({if !empty($dur.h)}{$dur.h} {'hour'|gettext|plural:$dur.h}{/if}{if !empty($dur.h) && !empty($dur.m)} {/if}{if !empty($dur.m)}{$dur.m} {'minute'|gettext|plural:$dur.m}{/if})</em>
             {/if}
@@ -123,15 +126,17 @@
                         {clear}
                         <h4>{'Options'|gettext}</h4>
                         <div class="product-options">
-                            {control type="hidden" name="ticket_types" value="1"}
-                            {control type=hidden name=options_shown value=$product->id}
+                            {control type=hidden name="ticket_types" value="1"}
+                            {control type=hidden name="options_shown" value=$product->id}
                             {foreach from=$product->optiongroup item=og}
                                 {if $og->hasEnabledOptions()}
                                     <div class="option {cycle values="odd,even"}">
                                         {if $og->allow_multiple}
-                                            {optiondisplayer product=$product options=$og->title view=checkboxes_with_quantity display_price_as=total selected=$params.options}
+                                            {*{optiondisplayer product=$product options=$og->title view=checkboxes display_price_as=total selected=$params.options}*}
+                                            {optiondisplayer product=$product options=$og->title view=checkboxes display_price_as=diff selected=$params.options}
                                         {else}
-                                            {optiondisplayer product=$product options=$og->title view=dropdown display_price_as=total selected=$params.options}
+                                            {*{optiondisplayer product=$product options=$og->title view=dropdown display_price_as=total selected=$params.options}*}
+                                            {optiondisplayer product=$product options=$og->title view=dropdown display_price_as=diff selected=$params.options}
                                         {/if}
                                     </div>
                                 {/if}
@@ -140,6 +145,7 @@
                     {/if}
 
                     {$controls = $product->getAllControls($product->multi_registrant)}
+                    {$paged = false}
                     {if !empty($controls)}
                         {clear}
                         {if $product->multi_registrant}
@@ -185,12 +191,32 @@
                         {else}
                             <h3>{'Registration'|gettext}</h3>
                             {'Please complete the following information to register'|gettext}
+                            <div id="form-pages"></div>
                             {foreach $controls as $control}
                                 {$ctlname = $control->name}
-                                <td>
-                                    {$product->showControl($control,"registrant[`$ctlname`][]",null,$registrant->$ctlname)}
-                                </td>
+                                {if !$control@first && get_class($control->ctl) == 'pagecontrol'}
+                                    {$paged = true}
+                                   </fieldset>
+                               {/if}
+                                {$product->showControl($control,"registrant[`$ctlname`][]",null,$registrant->$ctlname)}
                             {/foreach}
+                            {if get_class($controls[0]->ctl) == 'pagecontrol'}
+                                </fieldset>
+                            {/if}
+                            {if $paged}
+                                {script unique="paged_event" jquery='jquery.validate,jquery.stepy'}
+                                {literal}
+                                    $('#addtocart{/literal}{$product->id}{literal}').stepy({
+                                        validate: true,
+                                        block: true,
+                                        errorImage: true,
+                                        btnClass: 'awesome {/literal}$smarty.const.BTN_SIZE $smarty.const.BTN_COLOR{literal}',
+                                        titleClick: true,
+                                        titleTarget: '#form-pages',
+                                    });
+                                {/literal}
+                                {/script}
+                            {/if}
                         {/if}
                     {/if}
                     {if $product->require_terms_and_condition}

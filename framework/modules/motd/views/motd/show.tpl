@@ -19,7 +19,7 @@
     {$myloc=serialize($__loc)}
     <div class="motd-message">
         <div class="motd-date">
-            <span class="date-header">{$smarty.now|format_date:"%a, %b %e, %Y"}</span>
+            <span class="date-header">{$smarty.now|format_date}</span>
             {clear}
         </div>
         <div class="bodycopy">
@@ -27,12 +27,11 @@
         </div>
         {clear}
         <a class="link" href="{link action=showall}">{'View Previous Tips'|gettext}</a>
-    
         {permissions}
 			<div class="module-actions">
-				{if $permissions.edit == 1}
-                    {if $myloc != $message->location_data}
-                        {if $permissions.manage == 1}
+				{if $permissions.edit || ($permissions.create && $message->poster == $user->id)}
+                    {if !empty($message->location_data) && $myloc != $message->location_data}
+                        {if $permissions.manage}
                             {icon action=merge id=$message->id title="Merge Aggregated Content"|gettext}
                         {else}
                             {icon img='arrow_merge.png' title="Merged Content"|gettext}

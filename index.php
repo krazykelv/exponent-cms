@@ -68,7 +68,7 @@ if ($db->havedb) {
     $section = $router->getSection();
     $sectionObj = $router->getSectionObj($section);
     if ($sectionObj->alias_type == 1) {  // asking for an external link url instead of exponent
-        redirect_to(substr($sectionObj->external_link, 4) == 'http' ? $sectionObj->external_link : 'http://' . $sectionObj->external_link);
+        redirect_to(substr($sectionObj->external_link, 0, 4) == 'http' ? $sectionObj->external_link : 'http://' . $sectionObj->external_link);
     }
 }
 if (ENABLE_TRACKING) $router->updateHistory($section);
@@ -136,7 +136,7 @@ if (EXPORT_AS_PDF == 1) {
     $content = ob_get_clean();
 
     // convert to PDF
-    $pdf = new expHtmlToPDF2('A4',EXPORT_AS_PDF_LANDSCAPE?'landscape':'portrait',$content);
+    $pdf = new expHtmlToPDF('Letter',EXPORT_AS_PDF_LANDSCAPE?'landscape':'portrait',$content);
     $pdf->createpdf(HTML2PDF_OUTPUT?'D':'I',$sectionObj->name.".pdf");
     echo '<script type="text/javascript">
         <!--

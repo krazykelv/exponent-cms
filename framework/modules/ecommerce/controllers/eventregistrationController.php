@@ -45,11 +45,12 @@ class eventregistrationController extends expController {
         'categories',
         'comments',
         'ealerts',
+        'facebook',
         'files',
-//        'module_title',
         'rss',
-        'tags'
-    );  // all options: ('aggregation','categories','comments','ealerts','files','pagination','rss','tags')
+        'tags',
+        'twitter',
+    );  // all options: ('aggregation','categories','comments','ealerts','facebook','files','module_title','pagination','rss','tags','twitter',)
 
     public $add_permissions = array(
         'view_registrants'=> 'View Registrants',
@@ -70,13 +71,29 @@ class eventregistrationController extends expController {
         $limit = (!empty($this->config['limit'])) ? $this->config['limit'] : 10;
 
         $pass_events = array();
-        if ($user->isAdmin()) {
-            $pass_events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
-        } else {
-            $events      = $this->eventregistration->find('all', 'product_type="eventregistration" && active_type=0', "title ASC", $limit);
+        if (!empty($this->params['past']) && $user->isAdmin()) {
+            $events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
             foreach ($events as $event) {
+               // $this->signup_cutoff > time()
+               if ($event->eventdate <= time() && $event->eventenddate <= time()) {
+                   $pass_events[] = $event;
+               }
+               // eDebug($event->signup_cutoff, true);
+           }
+        } else {
+            if ($user->isAdmin()) {
+                $events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
+            } else {
+                $events = $this->eventregistration->find('all', 'product_type="eventregistration" && active_type=0', "title ASC", $limit);
+            }
+            foreach ($events as $event) {
+                if ($user->isAdmin()) {
+                    $endtime = $event->eventenddate;
+                } else {
+                    $endtime = $event->signup_cutoff;
+                }
                 // $this->signup_cutoff > time()
-                if ($event->eventdate > time() && $event->signup_cutoff > time()) {
+                if ($event->eventdate > time() && $endtime > time()) {
                     $pass_events[] = $event;
                 }
                 // eDebug($event->signup_cutoff, true);
@@ -103,12 +120,15 @@ class eventregistrationController extends expController {
             ),
         ));
         assign_to_template(array(
-            'page'=> $page
+            'page'=> $page,
+            'admin'=> $user->isAdmin(),
+            'past'=> !empty($this->params['past'])
         ));
     }
 
     function eventsCalendar() {
-        global $db, $user;
+//        global $db, $user;
+        global $user;
 
         expHistory::set('viewable', $this->params);
 
@@ -214,7 +234,7 @@ class eventregistrationController extends expController {
     }
 
     function upcomingEvents() {
-        global $db;
+//        global $db;
 
         $sql = 'SELECT DISTINCT p.*, er.eventdate, er.event_starttime, er.signup_cutoff FROM ' . DB_TABLE_PREFIX . '_product p ';
         $sql .= 'JOIN ' . DB_TABLE_PREFIX . '_eventregistration er ON p.product_type_id = er.id ';
@@ -257,14 +277,15 @@ class eventregistrationController extends expController {
         $product = new eventregistration($id);
 
         //FIXME we only have 0=active & 2=inactive ???
-//        $product_type = new stdClass();
         if ($product->active_type == 1) {
             $product->user_message = "This event is temporarily unavailable for registration.";
-        } elseif ($product->active_type == 2 && !$user->isAdmin()) {
-            flash("error", $product->title . " " . gt("registration is currently unavailable for registration."));
-            expHistory::back();
-        } elseif ($product->active_type == 2 && $user->isAdmin()) {
-            $product->user_message = $product->title . " is currently marked as unavailable for open registration or display.  Normal users will not see this event.";
+        } elseif ($product->active_type == 2) {
+            if ($user->isAdmin()) {
+                $product->user_message = $product->title . " is currently marked as unavailable for open registration or display.  Normal users will not see this event.";
+            } else {
+                flash("error", $product->title . " " . gt("registration is currently unavailable for registration."));
+                expHistory::back();
+            }
         }
 
         $order_registrations = array();
@@ -314,14 +335,15 @@ class eventregistrationController extends expController {
 
         //TODO should we pull in an existing reservation already in the cart to edit? e.g., the registrants
          //FIXME we only have 0=active & 2=inactive ???
-//        $product_type = new stdClass();
         if ($product->active_type == 1) {
             $product->user_message = "This event is temporarily unavailable for registration.";
-        } elseif ($product->active_type == 2 && !$user->isAdmin()) {
-            flash("error", $product->title . " " . gt("registration is currently unavailable."));
-            expHistory::back();
-        } elseif ($product->active_type == 2 && $user->isAdmin()) {
-            $product->user_message = $product->title . " is currently marked as unavailable for open registration or display.  Normal users will not see this event.";
+        } elseif ($product->active_type == 2) {
+            if ($user->isAdmin()) {
+                $product->user_message = $product->title . " is currently marked as unavailable for open registration or display.  Normal users will not see this event.";
+            } else {
+                flash("error", $product->title . " " . gt("registration is currently unavailable."));
+                expHistory::back();
+            }
         }
 
         //eDebug($product, true);
@@ -337,15 +359,33 @@ class eventregistrationController extends expController {
         expHistory::set('viewable', $this->params);
         $limit = (!empty($this->config['limit'])) ? $this->config['limit'] : 10;
 
-        if ($user->isAdmin()) {
-            $pass_events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
-        } else {
-            $events      = $this->eventregistration->find('all', 'product_type="eventregistration" && active_type=0', "title ASC", $limit);
-            $pass_events = array();
+        $pass_events = array();
+        if (!empty($this->params['past']) && $user->isAdmin()) {
+            $events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
             foreach ($events as $event) {
-                if ($event->signup_cutoff > time()) {
+               // $this->signup_cutoff > time()
+               if ($event->eventdate <= time() && $event->eventenddate <= time()) {
+                   $pass_events[] = $event;
+               }
+               // eDebug($event->signup_cutoff, true);
+           }
+        } else {
+            if ($user->isAdmin()) {
+                $events = $this->eventregistration->find('all', 'product_type="eventregistration"', "title ASC", $limit);
+            } else {
+                $events = $this->eventregistration->find('all', 'product_type="eventregistration" && active_type=0', "title ASC", $limit);
+            }
+            foreach ($events as $event) {
+                // $this->signup_cutoff > time()
+                if ($user->isAdmin()) {
+                    $endtime = $event->eventenddate;
+                } else {
+                    $endtime = $event->signup_cutoff;
+                }
+                if ($event->eventdate > time() && $endtime > time()) {
                     $pass_events[] = $event;
                 }
+                // eDebug($event->signup_cutoff, true);
             }
         }
         foreach ($pass_events as $key=>$pass_event) {
@@ -372,7 +412,9 @@ class eventregistrationController extends expController {
             ),
         ));
         assign_to_template(array(
-            'page'=> $page
+            'page'=> $page,
+            'admin'=> $user->isAdmin(),
+            'past'=> !empty($this->params['past'])
         ));
     }
 
@@ -383,16 +425,17 @@ class eventregistrationController extends expController {
         // figure out what metadata to pass back based on the action we are in.
 //        $action   = $_REQUEST['action'];
         $action   = $router->params['action'];
-        $metainfo = array('title' => '', 'keywords' => '', 'description' => '', 'canonical'=> '');
+        $metainfo = array('title' => '', 'keywords' => '', 'description' => '', 'canonical'=> '', 'noindex' => '', 'nofollow' => '');
         switch ($action) {
             case 'donate':
-                $metainfo['title']       = 'Make a eventregistration';
-                $metainfo['keywords']    = 'donate online';
-                $metainfo['description'] = "Make a eventregistration";
-                $metainfo['canonical']   = '';
+                $metainfo['title']       = gt('Make an event registration');
+                $metainfo['keywords']    = gt('event registration online');
+                $metainfo['description'] = gt("Make an event registration");
                 break;
             default:
-                $metainfo = array('title'=> $this->displayname() . " - " . SITE_TITLE, 'keywords'=> SITE_KEYWORDS, 'description'=> SITE_DESCRIPTION, 'canonical'=> '');
+                $metainfo['title']       = $this->displayname() . " - " . SITE_TITLE;
+                $metainfo['keywords']    = SITE_KEYWORDS;
+                $metainfo['description'] = SITE_DESCRIPTION;
         }
 
         return $metainfo;
@@ -495,9 +538,9 @@ class eventregistrationController extends expController {
             $product->addToCart($this->params['eventregistration']);
         }
 
+        $order->calculateGrandTotal();
         $order->setOrderType($this->params);
         $order->setOrderStatus($this->params);
-        $order->calculateGrandTotal();
 
         $billing = new billing();
         $result  = $billing->calculator->preprocess($billing->billingmethod, $opts, $this->params, $order); //FIXME $opts doesn't exist
@@ -512,10 +555,11 @@ class eventregistrationController extends expController {
         expHistory::set('viewable', $this->params);
         $event = new eventregistration($this->params['id']);
         //Get all the registrants in the event
-        $registrants = $event->getRegistrants();
+//        $registrants = $event->getRegistrants();
         assign_to_template(array(
             'event'=> $event,
-            'registrants'=> $registrants,
+            'registrants'=> $event->getRegistrants(),
+            'count'=> $event->countRegistrants(),
 //            'header'=> $header,
 //            'body'=> $body,
 //            'email'=> $email
@@ -750,7 +794,7 @@ class eventregistrationController extends expController {
     }
 
     public function export() {
-        global $db;
+//        global $db;
 
         $event              = new eventregistration($this->params['id']);
 
@@ -1150,7 +1194,8 @@ class eventregistrationController extends expController {
 
     // create a pseudo global view_registrants permission
     public static function checkPermissions($permission,$location) {
-        global $exponent_permissions_r, $user, $db, $router;
+//        global $exponent_permissions_r, $user, $db, $router;
+        global $exponent_permissions_r, $router;
 
         // only applies to the 'view_registrants' method
         if (empty($location->src) && empty($location->int) && $router->params['action'] == 'view_registrants') {

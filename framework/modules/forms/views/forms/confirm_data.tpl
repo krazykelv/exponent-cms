@@ -31,8 +31,10 @@
     <h1>{'Please confirm your submission'|gettext}</h1>
     <table width="100%" border="0" cellpadding="0" cellspacing="0" class="exp-skin-table">
         <thead>
-        <th>{'Field'|gettext}</th>
-        <th>{'Your Response'|gettext}</th>
+            <tr>
+                <th>{'Field'|gettext}</th>
+                <th>{'Your Response'|gettext}</th>
+            </tr>
         </thead>
         <tbody>
         {foreach from=$responses item=response key=name}
@@ -44,10 +46,10 @@
         </tbody>
     </table>
     {form action=submit_data}
-    {foreach from=$postdata item=data key=name}
-        {control type=hidden name=$name value=$data}
-    {/foreach}
-    {control type=antispam}
-    {control type=buttongroup submit="Submit Form"|gettext cancel="Change Responses"|gettext}
+        {foreach from=$postdata item=data key=name}
+            {control type=hidden name=$name value=$data}
+        {/foreach}
+        {control type=antispam}
+        {control type=buttongroup submit="Submit Form"|gettext cancel="Change Responses"|gettext}
     {/form}
 </div>

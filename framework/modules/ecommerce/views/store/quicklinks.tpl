@@ -18,7 +18,7 @@
 {/css}
 
 <div class="module store quick-links">
-    {if $moduletitle && !($config.hidemoduletitle xor $smarty.const.INVERT_HIDE_TITLE)}<h1>{$moduletitle}</h1>{/if}
+    {if $moduletitle && !($config.hidemoduletitle xor $smarty.const.INVERT_HIDE_TITLE)}<h2>{$moduletitle}</h2>{/if}
     {if $config.moduledescription != ""}
         {$config.moduledescription}
     {/if}
@@ -36,7 +36,9 @@
             <li><a class="profile" href="{link module=users action=viewuser}">{'View My Account'|gettext}</a></li>
             <li><a class="addressbook" href="{link module=address action=myaddressbook}">{'Manage My Addresses'|gettext}</a></li>
             <li><a class="vieworders" href="{link module=order action=ordersbyuser}">{'View My Orders'|gettext}</a></li>
-            <li><a class="password" href="{link controller=users action=change_password}">{'Change My Password'|gettext}</a></li>
+            {if !($smarty.const.USER_NO_PASSWORD_CHANGE || $user->is_ldap || !$user->isAdmin())}
+                <li><a class="password" href="{link controller=users action=change_password}">{'Change My Password'|gettext}</a></li>
+            {/if}
             <li><a class="logout" href="{link controller=login action=logout}">{'Log Out'|gettext}</a></li>
         {else}
             <li><a class="login" href="{link controller=login action=loginredirect}" rel="nofollow">{'Login'|gettext}</a></li>
